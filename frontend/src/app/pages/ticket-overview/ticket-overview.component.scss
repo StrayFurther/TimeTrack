@@ -1,0 +1,40 @@
+
+.status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 8px;
+}
+
+.status-new {
+  background-color: #007bff; // Blue for "New"
+}
+
+.status-in-progress {
+  background-color: #ffc107; // Yellow for "In Progress"
+}
+
+.status-completed {
+  background-color: #28a745; // Green for "Completed"
+}
+
+.status-pending-review {
+  background-color: #17a2b8; // Cyan for "Pending Review"
+}
+
+.status-on-hold {
+  background-color: #6c757d; // Gray for "On Hold"
+}
+
+.status-cancelled {
+  background-color: #dc3545; // Red for "Cancelled"
+}
+
+.status-reopened {
+  background-color: #fd7e14; // Orange for "Reopened"
+}
+
+.status-blocked {
+  background-color: #343a40; // Dark gray for "Blocked"
+}

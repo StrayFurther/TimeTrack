@@ -1,0 +1,25 @@
+<div class="d-flex w-100 justify-content-between flex-wrap px-3">
+  @for (ticket of tickets; track ticket.id) {
+    <mat-card class="mt-5 w-47-5">
+      <mat-card-header class="d-flex w-100">
+        <div class="d-flex flex-column w-100">
+          <mat-card-title>{{ ticket.name }}</mat-card-title>
+          <mat-card-subtitle>
+            {{ ticket.status }}
+            <span class="status-indicator" [ngClass]="getStatusClass(ticket.status)"></span>
+          </mat-card-subtitle>
+        </div>
+        <mat-icon [ngClass]="getPriorityClass(ticket.priority)">{{getPriorityIcon(ticket.priority)}}</mat-icon>
+      </mat-card-header>
+      <mat-card-content>
+        <p>{{ ticket.description }}</p>
+        <p>Created: {{ ticket.createdAt | date:'short' }}</p>
+        <p>Updated: {{ ticket.updatedAt | date:'short' }}</p>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button >Edit</button>
+        <button mat-button >Delete</button>
+      </mat-card-actions>
+    </mat-card>
+  }
+</div>

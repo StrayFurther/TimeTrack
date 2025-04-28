@@ -22,8 +22,33 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
   font-size: 12px;
 }
 
+.cursive-font {
+  font-family: 'Cursive', 'Brush Script MT', sans-serif;
+}
+
+.w-45 {
+  width: 45%;
+}
+
+.w-47-5 {
+  width: 47.5%;
+}
+
+.priority-high {
+  color: #FF0000 !important;
+}
+
+.priority-medium {
+  color: #FFA500 !important;
+}
+
+.priority-low {
+  color: #008000 !important;
+}
+
 @media (max-width: 600px) {
   .tt-small-text {
     font-size: 10px;
   }
 }
+
