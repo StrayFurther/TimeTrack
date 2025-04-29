@@ -1,13 +1,14 @@
-import { Component } from '@angular/core';
-import {Priority, Ticket, TicketStatus} from '../../models/ticket';
-import {TICKETS} from '../../mocks/tickets';
+import {Component, inject} from '@angular/core';
+import {Priority, Ticket, TicketStatus} from '../../../models/ticket';
+import {TICKETS} from '../../../mocks/tickets';
 import {MatCard, MatCardActions, MatCardContent, MatCardHeader, MatCardTitle, MatCardSubtitle } from '@angular/material/card';
 import {MatButton} from '@angular/material/button';
 import {CommonModule, DatePipe} from '@angular/common';
 import {MatIcon, MatIconModule} from '@angular/material/icon';
+import {Router} from '@angular/router';
 
 @Component({
-  selector: 'app-ticket-overview',
+  selector: 'ticket-overview',
   imports: [
     MatCard,
     MatCardSubtitle,
@@ -24,7 +25,8 @@ import {MatIcon, MatIconModule} from '@angular/material/icon';
   styleUrl: './ticket-overview.component.scss'
 })
 export class TicketOverviewComponent {
-  tickets: Ticket[] = TICKETS;
+  tickets: Ticket[] = TICKETS
+  router = inject(Router)
 
   getPriorityClass(priority?: Priority): string {
     switch (priority) {
@@ -73,5 +75,9 @@ export class TicketOverviewComponent {
       default:
         return '';
     }
+  }
+
+  onClickTicketName(id: number) {
+    this.router.navigate(['ticket', id])
   }
 }

@@ -3,7 +3,7 @@
     <mat-card class="mt-5 w-47-5">
       <mat-card-header class="d-flex w-100">
         <div class="d-flex flex-column w-100">
-          <mat-card-title>{{ ticket.name }}</mat-card-title>
+          <div (click)="onClickTicketName(ticket.id)"><mat-card-title>{{ ticket.name }}</mat-card-title></div>
           <mat-card-subtitle>
             {{ ticket.status }}
             <span class="status-indicator" [ngClass]="getStatusClass(ticket.status)"></span>
@@ -17,7 +17,6 @@
         <p>Updated: {{ ticket.updatedAt | date:'short' }}</p>
       </mat-card-content>
       <mat-card-actions>
-        <button mat-button >Edit</button>
         <button mat-button >Delete</button>
       </mat-card-actions>
     </mat-card>
