@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  mysql-tt:
+    image: mysql:8.0
+    container_name: tt-db
+    environment:
+      MYSQL_ROOT_PASSWORD: "!1%RootRootBaby"
+      MYSQL_DATABASE: timetrack
+      MYSQL_USER: ttuser
+      MYSQL_PASSWORD: "!1%TTUser"
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+volumes:
+  db_data:
