@@ -3,17 +3,17 @@ package strayfurther.backend.infrastructure;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 
-import java.util.Optional;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -222,6 +222,60 @@ public class UserIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
+
+    @Test
+    void shouldReturnTrueIfEmailExists() throws Exception {
+        // Register a user
+        String requestBody = """
+        {
+            "userName": "existsUser",
+            "email": "exists@example.com",
+            "password": "Password123-"
+        }
+    """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/user/exists")
+                        .param("email", "exists@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.value").value(true));
+    }
+
+    @Test
+    void shouldReturnFalseIfEmailDoesNotExist() throws Exception {
+        mockMvc.perform(get("/user/exists").param("email", "notfound@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.value").value(false));
+    }
+
+    @Test
+    void shouldReturnTrueForCaseInsensitiveEmail() throws Exception {
+        // Register with mixed case email
+        String requestBody = """
+        {
+            "userName": "caseUser",
+            "email": "CaseSensitive@Example.com",
+            "password": "Password123-"
+        }
+    """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+        // Check existence with lowercase email (URL-encoded)
+
+        mockMvc.perform(get("/user/exists")
+                        .param("email", "casesensitive@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.value").value(true));
+    }
+
 
 
 }

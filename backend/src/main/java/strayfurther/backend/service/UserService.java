@@ -45,4 +45,8 @@ public class UserService {
         return JwtUtil.generateToken(userOptional.get().getEmail());
 
     }
+
+    public boolean emailExists(String email) {
+        return userRepository.existsByEmail(email.toLowerCase(Locale.ROOT));
+    }
 }
