@@ -23,6 +23,7 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRequestDTO userRequest) {
+        System.out.println("HECKIN REGSTER USER: " + userRequest);
         userService.registerUser(userRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }

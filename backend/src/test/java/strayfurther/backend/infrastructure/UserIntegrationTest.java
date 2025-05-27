@@ -56,17 +56,24 @@ public class UserIntegrationTest {
 
     @Test
     void shouldFailOnDuplicateEmail() throws Exception {
-        User existingUser = new User();
-        existingUser.setUserName("existingUser");
-        existingUser.setEmail("duplicate@example.com");
-        existingUser.setPassword("Encodedpass123-");
-        userRepository.save(existingUser);
-
         String requestBody = """
+            {
+                "userName": "loginUser",
+                "email": "duplicate@example.com",
+                "password": "Encodedpass123-"
+            }
+        """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+        requestBody = """
             {
                 "userName": "newUser",
                 "email": "duplicate@example.com",
-                "password": "anotherPass123"
+                "password": "anotherPass123-"
             }
         """;
 
@@ -83,6 +90,22 @@ public class UserIntegrationTest {
                 "userName": "invalidMailUser",
                 "email": "invalidemail",
                 "password": "PLainPassword123-"
+            }
+        """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldFailWithInvalidInputPW() throws Exception {
+        String requestBody = """
+            {
+                "userName": "invalidPWUser",
+                "email": "valid@email.com",
+                "password": "PLainPassword123"
             }
         """;
 
@@ -125,7 +148,7 @@ public class UserIntegrationTest {
     }
 
     @Test
-    void shouldFailToLoginWithInvalidCredentials() throws Exception {
+    void shouldFailToLoginWithNoUserRegistered() throws Exception {
         String requestBody = """
                     {
                         "email": "user@mail.com",
@@ -138,4 +161,67 @@ public class UserIntegrationTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid credentials"));
     }
+
+    @Test
+    void shouldFailWithWrongCredentialsForUser() throws Exception {
+        // need to register first
+        String requestBody = """
+            {
+                "userName": "loginUser",
+                "email": "example@mail.com",
+                "password": "Encodedpass123-"
+            }
+        """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated());
+
+
+        requestBody = """
+                    {
+                        "email": "example@mail.com",
+                        "password": "Encodedpass123"
+                    }
+                """;
+
+        mockMvc.perform(post("/user/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldRegisterAndLoginWithCaseInsensitiveEmail() throws Exception {
+        // Register with uppercase email
+        String registerRequest = """
+        {
+            "userName": "caseUser",
+            "email": "CaseUser@Example.com",
+            "password": "StrongPass123!"
+        }
+    """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerRequest))
+                .andExpect(status().isCreated());
+
+        // Login with lowercase email
+        String loginRequest = """
+        {
+            "email": "caseuser@example.com",
+            "password": "StrongPass123!"
+        }
+    """;
+
+        mockMvc.perform(post("/user/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").exists());
+    }
+
+
 }
