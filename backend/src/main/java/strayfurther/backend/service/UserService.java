@@ -16,10 +16,12 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
+        this.jwtUtil = jwtUtil;
     }
 
     public void registerUser(UserRequestDTO userRequest) {
@@ -42,7 +44,7 @@ public class UserService {
         if (userOptional.isEmpty() || !passwordEncoder.matches(loginRequest.getPassword(), userOptional.get().getPassword())) {
             return null;
         }
-        return JwtUtil.generateToken(userOptional.get().getEmail());
+        return jwtUtil.generateToken(userOptional.get().getEmail());
 
     }
 
