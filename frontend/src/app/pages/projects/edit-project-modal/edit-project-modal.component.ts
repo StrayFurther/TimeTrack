@@ -26,7 +26,7 @@ export class EditProjectModalComponent implements OnInit {
     if (this.project) {
       this.projectForm = new FormGroup({
         name: new FormControl(this.project.name, [Validators.required]),
-        description: new FormControl(this.project.description, [Validators.required]),
+        description: new FormControl(this.project.description, []),
       });
     }
   }

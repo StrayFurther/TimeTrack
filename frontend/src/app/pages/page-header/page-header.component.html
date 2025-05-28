@@ -5,25 +5,25 @@
   <span class="w-100 text-end" >Time Tracker <span class="tt-small-text cursive-font">by Thomas</span></span>
 </mat-toolbar>
 <mat-menu #menu="matMenu">
-  <button mat-menu-item (click)="console.log('Menu item clicked_: Profile')">
+  <button mat-menu-item (click)="goToProfile()">
     <mat-icon>person</mat-icon>
     <span>Profile</span>
   </button>
-  <button mat-menu-item (click)="console.log('Menu item clicked_: Tickets')">
+  <button mat-menu-item (click)="goToProjects()">
     <mat-icon class="material-symbols-outlined">
       local_activity
     </mat-icon>
-    <span>Tickets</span>
+    <span>Projects</span>
   </button>
-  <button mat-menu-item class="w-auto" aria-label="Example icon-button with heart icon">
+  <button mat-menu-item class="w-auto" aria-label="Example icon-button with heart icon" (click)="exportToPdf()">
     <mat-icon>picture_as_pdf</mat-icon>
     <span>Als PDF exportieren</span>
   </button>
-  <button mat-menu-item (click)="console.log('Menu item clicked_: Settings')">
+  <button mat-menu-item (click)="goToSettings()">
     <mat-icon>settings</mat-icon>
     <span>Settings</span>
   </button>
-  <button mat-menu-item (click)="console.log('Menu item clicked_: Loggout')">
+  <button mat-menu-item (click)="goToLogin()">
     <mat-icon>logout</mat-icon>
     <span>Logout</span>
   </button>
