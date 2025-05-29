@@ -50,7 +50,7 @@ export class UserService {
   }
 
   login(email: string, password: string): Observable<LoginResponse> {
-    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/login`, { email, password }).pipe(
+    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/user/login`, { email, password }).pipe(
       tap((response: LoginResponse) => {
         this.jwtToken = response.token;
         localStorage.setItem(environment.jwtTokenName, this.jwtToken);
@@ -63,7 +63,7 @@ export class UserService {
   }
 
   register(email: string, password: string, userName: string): Observable<RegisterResponse> {
-    return this.httpClient.post<RegisterResponse>(`${this.apiUrl}/register`, { email, password, userName }).pipe(
+    return this.httpClient.post<RegisterResponse>(`${this.apiUrl}/user/register`, { email, password, userName }).pipe(
       catchError((error) => {
         console.error('Registration failed', error);
         throw error; // Re-throw the error for further handling

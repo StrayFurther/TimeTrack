@@ -1,8 +1,8 @@
-<mat-toolbar>
+<mat-toolbar class="justify-content-between">
   <button mat-icon-button class="w-auto" [matMenuTriggerFor]="menu">
     <mat-icon>menu</mat-icon>
   </button>
-  <span class="w-100 text-end" >Time Tracker <span class="tt-small-text cursive-font">by Thomas</span></span>
+  <img src="assets/icon_effortrix.png" alt="Effortrix Logo" class="mini__logo d-block mt-2 mb-2">
 </mat-toolbar>
 <mat-menu #menu="matMenu">
   <button mat-menu-item (click)="goToProfile()">
