@@ -1,0 +1,15 @@
+@if (showLoadingSpinner()) {
+  <div>
+    <mat-card>
+      <mat-card-content>
+        <mat-progress-spinner
+          mode="indeterminate"
+        >
+        </mat-progress-spinner>
+      </mat-card-content>
+      @if (spinnerMessage()) {
+        <mat-card-title>{{ spinnerMessage() }}</mat-card-title>
+      }
+    </mat-card>
+  </div>
+}
