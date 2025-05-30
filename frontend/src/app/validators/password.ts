@@ -8,10 +8,12 @@ export function passwordValidator(): ValidatorFn {
     const minLength = /.{8,}/.test(value);
     const hasUpperCase = /[A-Z]/.test(value);
     const hasNumber = /\d/.test(value);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(value);
+    const hasSpecialChar = /[ !"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/.test(value);;
 
     const isValid = minLength && hasUpperCase && hasNumber && hasSpecialChar;
 
-    return isValid ? null : { invalidPassword: true };
+    const wat = isValid ? null : { invalidPassword: true };
+    console.log('Password validation result:', wat, value);
+    return wat;
   };
 }

@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import {inject, Injectable } from '@angular/core';
-import { environment } from '../../env/env';
-import {catchError, Observable, tap} from 'rxjs';
-import {LoginResponse} from '../models/login-response';
-import { RegisterResponse } from '../models/register-response';
+import { environment } from '../../../env/env';
+import {catchError, Observable, of, tap} from 'rxjs';
+import {LoginResponse} from '../../models/login-response';
+import { RegisterResponse } from '../../models/register-response';
 
 @Injectable({
   providedIn: 'root',
@@ -12,7 +12,7 @@ export class UserService {
   private user: any = null;
   private httpClient = inject(HttpClient);
   private apiUrl = environment.apiUrl;
-  private jwtToken: string | null = localStorage.getItem(environment.jwtTokenName);
+  private jwtToken?: string = localStorage.getItem(environment.jwtTokenName) || undefined;
 
   setUser(user: any): void {
     this.user = user;
@@ -28,7 +28,7 @@ export class UserService {
 
   clearUser(): void {
     this.user = null;
-    this.jwtToken = null;
+    this.jwtToken = undefined;
     localStorage.removeItem(environment.jwtTokenName);
   }
 
@@ -53,21 +53,17 @@ export class UserService {
     return this.httpClient.post<LoginResponse>(`${this.apiUrl}/user/login`, { email, password }).pipe(
       tap((response: LoginResponse) => {
         this.jwtToken = response.token;
-        localStorage.setItem(environment.jwtTokenName, this.jwtToken);
+        if (this.jwtToken) {
+          localStorage.setItem(environment.jwtTokenName, this.jwtToken);
+        }
       }),
-      catchError((error) => {
-        console.error('Login failed', error);
-        throw error; // Re-throw the error for further handling
-      })
+      catchError((error) => of({ error })),
     );
   }
 
   register(email: string, password: string, userName: string): Observable<RegisterResponse> {
     return this.httpClient.post<RegisterResponse>(`${this.apiUrl}/user/register`, { email, password, userName }).pipe(
-      catchError((error) => {
-        console.error('Registration failed', error);
-        throw error; // Re-throw the error for further handling
-      })
+      catchError((error) => of({ error })),
     );
   }
 }

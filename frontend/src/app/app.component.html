@@ -1,4 +1,7 @@
 @if (showHeader()) {
   <page-header />
 }
+@if (showLoadingSpinner()) {
+  <custom-loading-spinner />
+}
 <router-outlet></router-outlet>

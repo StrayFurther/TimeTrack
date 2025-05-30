@@ -52,6 +52,10 @@
           <div class="form-error">{{ formErrors['passwordMismatch'] }}</div>
         }
 
+        @if(registrationFailed) {
+          <div class="form-error">{{ registrationFailedMessage }}</div>
+        }
+
         <button mat-raised-button color="primary" type="submit" [disabled]="registerForm.invalid">
           Register
         </button>

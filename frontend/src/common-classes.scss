@@ -1,0 +1,28 @@
+.form-error {
+  color: #d32f2f !important;
+  margin-bottom: 16px !important;
+  display: block !important;
+  word-break: break-word !important;
+  white-space: pre-line !important;
+}
+
+
+.mat-mdc-form-field-error-wrapper:has(.form-error) {
+  position:  relative!important;
+  padding: 0!important;
+  margin-top: -10px !important;
+
+  mat-error.form-error {
+    color: #d32f2f !important;
+    display: block !important;
+    white-space: pre-line !important;
+    word-break: break-word !important;
+    position: static !important;
+    z-index: 0 !important;
+    &::before {
+      content: "⚠️";
+      color: red !important;
+      margin-right: 0.3em;
+    }
+  }
+}

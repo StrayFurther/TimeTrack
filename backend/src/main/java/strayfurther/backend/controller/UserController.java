@@ -11,6 +11,7 @@ import java.util.Locale;
 
 import strayfurther.backend.dto.UserRequestDTO;
 
+@CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/user")
 public class UserController {
