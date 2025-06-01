@@ -1,8 +1,11 @@
 package strayfurther.backend.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
+import strayfurther.backend.model.enums.Role;
 
 @Getter
 @Setter
@@ -20,5 +23,12 @@ public class User {
     @Column(unique = true)
     private String email;
 
+    @NotBlank
     private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
+    private String profilePic;
 }
