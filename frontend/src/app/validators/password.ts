@@ -13,7 +13,6 @@ export function passwordValidator(): ValidatorFn {
     const isValid = minLength && hasUpperCase && hasNumber && hasSpecialChar;
 
     const wat = isValid ? null : { invalidPassword: true };
-    console.log('Password validation result:', wat, value);
     return wat;
   };
 }

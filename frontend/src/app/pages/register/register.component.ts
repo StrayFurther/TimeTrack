@@ -12,6 +12,7 @@ import {MatInput} from '@angular/material/input';
 import {MatButton} from '@angular/material/button';
 import {LoadingSpinnerService} from '../../services/loading-spinner/loading-spinner.service';
 import { Router } from '@angular/router';
+import {emailTakenValidator} from '../../validators/email-taken';
 
 @Component({
   selector: 'register',
@@ -38,7 +39,7 @@ export class RegisterComponent {
 
   registerForm = new FormGroup({
       username: new FormControl('', [Validators.required]),
-      email: new FormControl('', [Validators.required, emailValidator]),
+      email: new FormControl('', [Validators.required, emailValidator], [emailTakenValidator(this.userService)]),
       password: new FormControl('', [Validators.required, passwordValidator()]),
       confirmPassword: new FormControl('', [Validators.required])
     }, { validators: matchPasswordsValidator });

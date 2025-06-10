@@ -26,6 +26,11 @@ div {
     mat-progress-spinner {
       width: 75% !important;
       height: 75% !important;
+      @media (max-width: 600px) {
+        width: 70% !important;
+        height: 70% !important;
+      }
+
     }
     mat-card-title {
       font-size: 1.5rem;

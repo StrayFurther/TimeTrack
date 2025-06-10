@@ -66,7 +66,7 @@ export class LoginComponent {
         // Navigate to the home page or dashboard after successful login
         this.router.navigate(['/project']).then(() => {});
       }
-      this.loadingSpinnerService.clearSpinner();
+      // this.loadingSpinnerService.clearSpinner();
     }
   }
 

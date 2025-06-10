@@ -50,7 +50,7 @@ public class UserController {
     public ResponseEntity<?> checkEmailExists(@RequestParam String email) {
         System.out.println("EEEEEEEMAIL: " + email);
         boolean exists = userService.emailExists(email.toLowerCase(Locale.ROOT));
-        return ResponseEntity.ok(Collections.singletonMap("value", exists));
+        return ResponseEntity.ok(exists);
     }
 
     @PostMapping("/profile-pic")

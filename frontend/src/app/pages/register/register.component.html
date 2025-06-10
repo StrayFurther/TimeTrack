@@ -10,7 +10,7 @@
           <mat-label>Username</mat-label>
           <input matInput formControlName="username" required>
           @if (registerForm.get('username')?.errors?.['required']) {
-            <mat-error>Username is required</mat-error>
+            <mat-error class="form-error">Username is required</mat-error>
           }
         </mat-form-field>
 
@@ -19,10 +19,13 @@
           <mat-label>Email</mat-label>
           <input matInput formControlName="email" required>
           @if (registerForm.get('email')?.errors?.['required']) {
-            <mat-error>Email is required</mat-error>
+            <mat-error class="form-error">Email is required</mat-error>
           }
-           @if (registerForm.get('email')?.errors?.['invalidEmail']) {
-            <mat-error>{{ formErrors['invalidEmail'] }}</mat-error>
+          @if (registerForm.get('email')?.errors?.['invalidEmail']) {
+            <mat-error class="form-error">{{ formErrors['invalidEmail'] }}</mat-error>
+          }
+          @if (registerForm.get('email')?.errors?.['emailTaken']) {
+            <mat-error class="form-error">{{ formErrors['emailTaken'] }}</mat-error>
           }
         </mat-form-field>
 
@@ -31,10 +34,10 @@
           <mat-label>Password</mat-label>
           <input matInput formControlName="password" type="password" required>
           @if (registerForm.get('password')?.errors?.['required']) {
-            <mat-error>Password is required</mat-error>
+            <mat-error class="form-error">Password is required</mat-error>
           }
           @if (registerForm.get('password')?.errors?.['invalidPassword']) {
-            <mat-error>{{ formErrors['invalidPassword'] }}</mat-error>
+            <mat-error class="form-error">{{ formErrors['invalidPassword'] }}</mat-error>
           }
         </mat-form-field>
 
@@ -43,7 +46,7 @@
           <mat-label>Confirm Password</mat-label>
           <input matInput formControlName="confirmPassword" type="password" required>
           @if (registerForm.get('confirmPassword')?.errors?.['required']) {
-            <mat-error>Confirm password is required</mat-error>
+            <mat-error class="form-error">Confirm password is required</mat-error>
           }
         </mat-form-field>
 

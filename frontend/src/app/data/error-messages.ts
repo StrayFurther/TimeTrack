@@ -3,4 +3,5 @@ export const errorMessages = {
   invalidPassword: 'Password must be at least 8 characters, include an uppercase letter and a special character.',
   passwordMismatch: 'Passwords do not match.',
   loginFailed: 'Login failed. Please check your email and password.',
+  emailTaken: 'This email is already taken. Please use a different email address.',
 }
