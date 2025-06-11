@@ -1,24 +1,21 @@
 package strayfurther.backend.infrastructure;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import strayfurther.backend.repository.UserRepository;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @AutoConfigureMockMvc
 @SpringBootTest
@@ -30,6 +27,41 @@ public class UserIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    String authenticateTestUser() throws Exception {
+        // Register and login to get a token
+        String registerRequest = """
+        {
+            "userName": "testUser",
+            "email": "test@example.com",
+            "password": "Password123!"
+        }
+        """;
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerRequest))
+                .andExpect(status().isCreated());
+
+            String loginRequest = """
+        {
+            "email": "test@example.com",
+            "password": "Password123!"
+        }
+        """;
+
+        String jsonResponse = mockMvc.perform(post("/user/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginRequest))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = objectMapper.readTree(jsonResponse);
+        return jsonNode.get("token").asText();
+    }
 
     @BeforeEach
     void setUp() {
@@ -242,14 +274,14 @@ public class UserIntegrationTest {
         mockMvc.perform(get("/user/exists")
                         .param("email", "exists@example.com"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.value").value(true));
+                .andExpect(content().string("true"));
     }
 
     @Test
     void shouldReturnFalseIfEmailDoesNotExist() throws Exception {
         mockMvc.perform(get("/user/exists").param("email", "notfound@example.com"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.value").value(false));
+                .andExpect(content().string("false"));
     }
 
     @Test
@@ -273,9 +305,96 @@ public class UserIntegrationTest {
         mockMvc.perform(get("/user/exists")
                         .param("email", "casesensitive@example.com"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.value").value(true));
+                .andExpect(content().string("true"));
     }
 
+    @Test
+    void shouldUploadProfilePicSuccessfully() throws Exception {
+        String token = authenticateTestUser();
 
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "profile-pic.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "test image content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/user/profile-pic")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filePath").exists());
+    }
+
+    @Test
+    void shouldFailToUploadProfilePicIfFileTooLarge() throws Exception {
+        String token = authenticateTestUser();
+
+        byte[] largeFileContent = new byte[3 * 1024 * 1024]; // 3MB file
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "large-profile-pic.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                largeFileContent
+        );
+
+        mockMvc.perform(multipart("/user/profile-pic")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("File too large"));
+    }
+
+    @Test
+    void shouldFailToUploadProfilePicIfInvalidFileType() throws Exception {
+        String token = authenticateTestUser();
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "invalid-file.txt",
+                MediaType.TEXT_PLAIN_VALUE,
+                "invalid content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/user/profile-pic")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Invalid file type"));
+    }
+
+    @Test
+    void shouldGetProfilePicSuccessfully() throws Exception {
+        String token = authenticateTestUser();
+
+        // Simulate a profile picture upload
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "profile-pic.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "test image content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/user/profile-pic")
+                        .file(file)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.filePath").exists());
+
+        mockMvc.perform(get("/user/profile-pic")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.IMAGE_JPEG));
+    }
+
+    @Test
+    void shouldFailToGetProfilePicIfNotFound() throws Exception {
+        String token = authenticateTestUser();
+
+        mockMvc.perform(get("/user/profile-pic")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Profile picture not found"));
+    }
 
 }

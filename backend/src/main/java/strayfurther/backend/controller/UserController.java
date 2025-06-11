@@ -7,10 +7,9 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import strayfurther.backend.dto.LoginRequestDTO;
-import strayfurther.backend.service.ProfilePicService;
+import strayfurther.backend.exception.FileStorageException;
 import strayfurther.backend.service.UserService;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Locale;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,8 +19,7 @@ import strayfurther.backend.dto.UserRequestDTO;
 @RestController
 @RequestMapping("/user")
 public class UserController {
-    private UserService userService;
-    private ProfilePicService fileService;
+    private final UserService userService;
 
     public UserController(UserService userService) {
         this.userService = userService;
@@ -54,35 +52,37 @@ public class UserController {
     }
 
     @PostMapping("/profile-pic")
-    public ResponseEntity<?> uploadProfilePic(@RequestParam("file") MultipartFile file) {
-        if (file.getSize() > 2 * 1024 * 1024) {
-            return ResponseEntity.badRequest().body("File too large");
-        }
-        if (!file.getContentType().startsWith("image/")) {
-            return ResponseEntity.badRequest().body("Invalid file type");
-        }
+    public ResponseEntity<?> uploadProfilePic(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
         try {
-            String filePath = fileService.saveProfilePic(file);
+            if (file.getSize() > 2 * 1024 * 1024) {
+                return ResponseEntity.badRequest().body("File too large");
+            }
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.badRequest().body("Invalid file type");
+            }
+            String filePath = userService.uploadProfilePic(token, file);
             return ResponseEntity.ok(Collections.singletonMap("filePath", filePath));
-        } catch (IOException e) {
+        } catch (FileStorageException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to upload file");
+                    .body("Failed to upload file: " + e.getMessage());
         }
     }
 
-    @GetMapping("/profile-pic/{userId}")
-    public ResponseEntity<?> getProfilePic(@PathVariable Long userId) {
-        String filePath = fileService.getProfilePicPath(userId);
+    @GetMapping("/profile-pic")
+    public ResponseEntity<?> getProfilePic(@RequestHeader("Authorization") String token) {
         try {
-            Resource file = fileService.loadFileAsResource(filePath);
+            Resource file = userService.getUserProfilePic(token);
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)
                     .body(file);
-        } catch (IOException e) {
+        } catch (FileStorageException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Profile picture not found");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid or missing token");
         }
     }
-
 
 }

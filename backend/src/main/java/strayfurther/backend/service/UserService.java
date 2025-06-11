@@ -1,10 +1,14 @@
 package strayfurther.backend.service;
 
+import org.springframework.core.io.Resource;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import strayfurther.backend.dto.LoginRequestDTO;
 import strayfurther.backend.dto.UserRequestDTO;
 import strayfurther.backend.exception.EmailAlreadyUsedException;
+import strayfurther.backend.exception.FileStorageException;
+import strayfurther.backend.exception.UserNotFoundException;
 import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 import strayfurther.backend.util.JwtUtil;
@@ -17,11 +21,13 @@ public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final ProfilePicService fileService;
 
-    public UserService(UserRepository userRepository, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, JwtUtil jwtUtil, ProfilePicService fileService) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtUtil = jwtUtil;
+        this.fileService = fileService;
     }
 
     public void registerUser(UserRequestDTO userRequest) {
@@ -52,4 +58,39 @@ public class UserService {
         return userRepository.existsByEmail(email.toLowerCase(Locale.ROOT));
     }
 
+    public User getUserFromToken(String token) {
+        try {
+            String email = jwtUtil.extractEmail(token);
+            return userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+    }
+
+    public Long getUserIdFromToken(String token) {
+        try {
+           return getUserFromToken(token).getId();
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+    }
+
+    public Resource getUserProfilePic(String token) throws FileStorageException {
+        User user = getUserFromToken(token);
+        return fileService.loadFileAsResource(user.getProfilePic());
+    }
+
+    public String uploadProfilePic(String token, MultipartFile file) throws FileStorageException {
+        User user = getUserFromToken(token);
+        String fileName = fileService.saveProfilePic(file);
+        user.setProfilePic(fileName);
+        userRepository.save(user);
+        return fileName;
+    }
+
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
+    }
 }
