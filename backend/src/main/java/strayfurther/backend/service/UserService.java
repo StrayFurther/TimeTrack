@@ -68,14 +68,6 @@ public class UserService {
         }
     }
 
-    public Long getUserIdFromToken(String token) {
-        try {
-           return getUserFromToken(token).getId();
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid or expired token");
-        }
-    }
-
     public Resource getUserProfilePic(String token) throws FileStorageException {
         User user = getUserFromToken(token);
         return fileService.loadFileAsResource(user.getProfilePic());
