@@ -364,6 +364,20 @@ public class UserIntegrationTest {
     }
 
     @Test
+    void shouldFailToUploadProfilePicWithoutToken() throws Exception {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "profile-pic.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "test image content".getBytes()
+        );
+
+        mockMvc.perform(multipart("/user/profile-pic")
+                        .file(file))
+                .andExpect(status().isForbidden()); // Expect 403 for missing token
+    }
+
+    @Test
     void shouldGetProfilePicSuccessfully() throws Exception {
         String token = authenticateTestUser();
 
@@ -390,6 +404,45 @@ public class UserIntegrationTest {
     @Test
     void shouldFailToGetProfilePicIfNotFound() throws Exception {
         String token = authenticateTestUser();
+
+        mockMvc.perform(get("/user/profile-pic")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("Profile picture not found"));
+    }
+
+    @Test
+    void shouldFailToGetProfilePicWithInvalidPossiblyRealToken() throws Exception {
+        // Provide a properly formatted but invalid JWT
+        String invalidToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalidPayload.invalidSignature";
+
+        mockMvc.perform(get("/user/profile-pic")
+                        .header("Authorization", "Bearer " + invalidToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldFailToGetProfilePicWithInvalidToken() throws Exception {
+        mockMvc.perform(get("/user/profile-pic")
+                        .header("Authorization", "Bearer invalidToken"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldFailToGetProfilePicWithoutToken() throws Exception {
+        mockMvc.perform(get("/user/profile-pic"))
+                .andExpect(status().isForbidden()); // Expect 403 for missing token
+    }
+
+    @Test
+    void shouldFailToGetProfilePicIfFileNameIsNull() throws Exception {
+        String token = authenticateTestUser();
+
+        // Simulate a user with a null profilePic
+        userRepository.findAll().forEach(user -> {
+            user.setProfilePic(null);
+            userRepository.save(user);
+        });
 
         mockMvc.perform(get("/user/profile-pic")
                         .header("Authorization", "Bearer " + token))

@@ -1,5 +1,6 @@
 package strayfurther.backend.filter;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,14 +33,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
-            String email = jwtUtil.extractEmail(token);
-            if (email != null && jwtUtil.isTokenValid(token, email)) {
-                var authToken = new JwtAuthenticationToken(email, token, null);
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+        try {
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                String email = jwtUtil.extractEmail(token);
+                if (email != null && jwtUtil.isTokenValid(token, email)) {
+                    var authToken = new JwtAuthenticationToken(email, token, null);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (JwtException e) {
+            // no need to do something here, just let the filter chain continue
         }
 
         filterChain.doFilter(request, response);
