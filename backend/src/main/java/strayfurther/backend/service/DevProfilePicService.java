@@ -32,26 +32,35 @@ public class DevProfilePicService implements ProfilePicService {
             String fileName = UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
             Path filePath = rootLocation.resolve(fileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-            return filePath.toString();
+            return fileName.toString();
         } catch (IOException e) {
             throw new FileStorageException("Failed to save file", e);
         }
     }
 
     @Override
-    public Resource loadFileAsResource(String filePath) throws FileStorageException {
+    public Resource loadFileAsResource(String fileName) throws FileStorageException {
         try {
-            Path path = rootLocation.resolve(Paths.get(filePath)).normalize();
+            Path path = rootLocation.resolve(Paths.get(fileName)).normalize();
             if (!path.startsWith(rootLocation)) {
-                throw new FileStorageException("Invalid file path: " + filePath);
+                throw new FileStorageException("Invalid file path: " + fileName);
             }
             if (Files.exists(path)) {
                 return new PathResource(path);
             } else {
-                throw new FileStorageException("File not found: " + filePath);
+                throw new FileStorageException("File not found: " + fileName);
             }
-        } catch (FileStorageException e) {
-            throw new FileStorageException("Error loading file: " + filePath, e);
+        } catch (Exception e) {
+            throw new FileStorageException("Error loading file: " + fileName, e);
+        }
+    }
+
+    @Override
+    public boolean deletePic(String fileName) throws FileStorageException {
+        try {
+            return Files.deleteIfExists(Paths.get(getProfilePicPath(fileName)));
+        } catch (IOException e) {
+            throw new FileStorageException("Failed to delete old profile picture: " + fileName, e);
         }
     }
 }

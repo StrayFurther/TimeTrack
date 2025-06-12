@@ -51,4 +51,15 @@ public class ProdProfilePicService implements ProfilePicService {
             throw new FileStorageException("Failed to load file from S3", e);
         }
     }
+
+    @Override
+    public boolean deletePic(String fileName) throws FileStorageException {
+        try {
+            String filePath = getProfilePicPath(fileName);
+            s3Client.deleteObject(bucketName, filePath);
+            return true;
+        } catch (Exception e) {
+            throw new FileStorageException("Failed to delete file from S3: " + fileName, e);
+        }
+    }
 }

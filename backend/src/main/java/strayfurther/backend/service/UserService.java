@@ -13,6 +13,7 @@ import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 import strayfurther.backend.util.JwtUtil;
 
+import java.io.File;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -75,6 +76,14 @@ public class UserService {
 
     public String uploadProfilePic(String token, MultipartFile file) throws FileStorageException {
         User user = getUserFromToken(token);
+
+        if (user.getProfilePic() != null) {
+            String oldFileName = user.getProfilePic();
+            if (oldFileName != null && !fileService.deletePic(oldFileName)) {
+                throw new FileStorageException("Failed to delete old profile picture: " + oldFileName);
+            }
+        }
+
         String fileName = fileService.saveProfilePic(file);
         user.setProfilePic(fileName);
         userRepository.save(user);

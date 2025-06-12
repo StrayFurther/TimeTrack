@@ -14,15 +14,18 @@ import java.util.Collections;
 import java.util.Locale;
 import org.springframework.web.multipart.MultipartFile;
 import strayfurther.backend.dto.UserRequestDTO;
+import strayfurther.backend.util.JwtUtil;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
 @RequestMapping("/user")
 public class UserController {
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
     }
 
     @PostMapping("/register")
@@ -52,7 +55,7 @@ public class UserController {
     }
 
     @PostMapping("/profile-pic")
-    public ResponseEntity<?> uploadProfilePic(@RequestHeader("Authorization") String token, @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> uploadProfilePic(@RequestHeader("Authorization") String authHeader, @RequestParam("file") MultipartFile file) {
         try {
             if (file.getSize() > 2 * 1024 * 1024) {
                 return ResponseEntity.badRequest().body("File too large");
@@ -61,6 +64,7 @@ public class UserController {
             if (contentType == null || !contentType.startsWith("image/")) {
                 return ResponseEntity.badRequest().body("Invalid file type");
             }
+            String token = jwtUtil.extractTokenFromHeader(authHeader);
             String filePath = userService.uploadProfilePic(token, file);
             return ResponseEntity.ok(Collections.singletonMap("filePath", filePath));
         } catch (FileStorageException e) {
@@ -70,8 +74,9 @@ public class UserController {
     }
 
     @GetMapping("/profile-pic")
-    public ResponseEntity<?> getProfilePic(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<?> getProfilePic(@RequestHeader("Authorization") String authHeader) {
         try {
+            String token = jwtUtil.extractTokenFromHeader(authHeader);
             Resource file = userService.getUserProfilePic(token);
             return ResponseEntity.ok()
                     .contentType(MediaType.IMAGE_JPEG)
