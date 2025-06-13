@@ -9,10 +9,8 @@ import strayfurther.backend.exception.FileStorageException;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
-import strayfurther.backend.model.User;
 
 @Profile("dev")
 @Service

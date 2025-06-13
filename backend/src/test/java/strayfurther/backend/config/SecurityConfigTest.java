@@ -1,5 +1,6 @@
 package strayfurther.backend.config;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -8,6 +9,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import strayfurther.backend.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -28,6 +30,14 @@ class SecurityConfigTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @BeforeEach
+    void setUp() {
+        userRepository.deleteAll();
+    }
 
     @Test
     void shouldLoadAuthenticationManagerBean() {
@@ -52,21 +62,21 @@ class SecurityConfigTest {
 //                .andExpect(status().isOk()); // Expect 200 OK or the appropriate success status
 //    }
 
-//    @Test
-//    void shouldAllowAccessToPublicEndpoints() throws Exception {
-//        String registerRequest = """
-//        {
-//            "userName": "testUser",
-//            "email": "test@example.com",
-//            "password": "Password123!"
-//        }
-//        """;
-//
-//        mockMvc.perform(post("/user/register").secure(true)
-//                        .contentType(MediaType.APPLICATION_JSON)
-//                        .content(registerRequest))
-//                .andExpect(status().isCreated());
-//    }
+    @Test
+    void shouldAllowAccessToPublicEndpoints() throws Exception {
+        String registerRequest = """
+        {
+            "userName": "testUser",
+            "email": "test@example.com",
+            "password": "Password123!"
+        }
+        """;
+
+        mockMvc.perform(post("/user/register").secure(true)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerRequest))
+                .andExpect(status().isCreated());
+    }
 
     @Test
     void shouldRequireAuthenticationForProtectedEndpoints() throws Exception {
