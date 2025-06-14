@@ -13,7 +13,6 @@ import strayfurther.backend.exception.JwtUtilException;
 
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.security.Key;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;

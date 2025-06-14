@@ -1,10 +1,12 @@
 package strayfurther.backend.security;
 
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Collection;
 
+@SpringBootTest
 public class JwtAuthenticationToken extends AbstractAuthenticationToken {
 
     private final Object principal; // User details or identifier
