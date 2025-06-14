@@ -90,8 +90,4 @@ public class UserService {
         return fileName;
     }
 
-    public User getUserById(Long userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
-    }
 }
