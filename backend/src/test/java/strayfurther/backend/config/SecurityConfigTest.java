@@ -1,23 +1,26 @@
 package strayfurther.backend.config;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import strayfurther.backend.repository.UserRepository;
+import strayfurther.backend.service.ProfilePicService;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
 class SecurityConfigTest {
@@ -49,18 +52,41 @@ class SecurityConfigTest {
         assertNotNull(passwordEncoder, "PasswordEncoder bean should be loaded");
     }
 
-//    @Test
-//    void shouldRedirectHttpToHttps() throws Exception {
-//        mockMvc.perform(get("/user/exists").secure(false)) // Simulate an HTTP request
-//                .andExpect(status().is3xxRedirection()) // Expect forbidden since HTTPS is required
-//                .andExpect(result -> assertTrue(
-//                        result.getResponse().getHeaderNames().contains("Strict-Transport-Security"),
-//                        "Strict-Transport-Security header should be present"
-//                ));
-//
-//        mockMvc.perform(get("/user/exists").secure(true)) // Simulate an HTTPS request
-//                .andExpect(status().isOk()); // Expect 200 OK or the appropriate success status
-//    }
+    @Nested
+    @ActiveProfiles("dev")
+    class ProdProfileTests {
+
+        @Autowired
+        private SecurityConfig securityConfig;
+
+        @Autowired
+        @Qualifier("devProfilePicService")
+        private ProfilePicService profilePicService;
+
+        @Test
+        void testSecurityFilterChainWithNonTestProfile() throws Exception {
+            // Act: Build the security filter chain
+            SecurityFilterChain filterChain = securityConfig.securityFilterChain(null);
+
+            // Assert: Ensure the filter chain is not null
+            assertNotNull(filterChain, "SecurityFilterChain should be created successfully");
+        }
+
+        @Test
+        void shouldRedirectHttpToHttps() throws Exception {
+            mockMvc.perform(post("http://localhost/user/register")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                    {
+                        "userName": "testUser",
+                        "email": "test@example.com",
+                        "password": "Password123!"
+                    }
+                    """))
+                    .andExpect(status().isFound()) // 302 status for redirection
+                    .andExpect(header().string("Location", "https://localhost/user/register")); // Ensure redirection to HTTPS
+        }
+    }
 
     @Test
     void shouldAllowAccessToPublicEndpoints() throws Exception {
