@@ -49,8 +49,11 @@ public class TestProfilePicService implements ProfilePicService {
     public boolean deletePic(String fileName) throws FileStorageException {
         if (inMemoryStorage.containsKey(fileName)) {
             inMemoryStorage.remove(fileName);
+            System.out.println("Deleted file: " + fileName);
             return true;
+        } else {
+            System.out.println("File not found for deletion: " + fileName);
+            return false;
         }
-        return false;
     }
 }

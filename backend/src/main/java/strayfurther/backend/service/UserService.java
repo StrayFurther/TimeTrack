@@ -13,7 +13,6 @@ import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 import strayfurther.backend.util.JwtUtil;
 
-import java.io.File;
 import java.util.Locale;
 import java.util.Optional;
 
