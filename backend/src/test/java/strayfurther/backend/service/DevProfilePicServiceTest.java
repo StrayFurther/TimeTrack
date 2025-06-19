@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import strayfurther.backend.exception.FileStorageException;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -32,11 +33,15 @@ class DevProfilePicServiceTest {
         devProfilePicService = new DevProfilePicService(testDirectory.toString());
     }
 
+
+
     @AfterEach
     void tearDown() throws IOException {
-        Path tempDirectory = Paths.get(testDirectory.toString());
-        if (Files.exists(tempDirectory)) {
-            Files.walk(tempDirectory)
+        if (Files.exists(testDirectory)) {
+            // Reset permissions to allow deletion
+            Files.setPosixFilePermissions(testDirectory, PosixFilePermissions.fromString("rwxrwxrwx"));
+
+            Files.walk(testDirectory)
                     .sorted(Comparator.reverseOrder())
                     .map(Path::toFile)
                     .forEach(file -> {
@@ -45,7 +50,6 @@ class DevProfilePicServiceTest {
                         }
                     });
         }
-
     }
 
     @Test
@@ -64,6 +68,71 @@ class DevProfilePicServiceTest {
         assertTrue(exception.getMessage().contains("Empty files are not allowed."), "Exception message should indicate save failure");
     }
 
+    @Test
+    void testSaveProfilePicSuccess() throws IOException {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "profile-pic.jpg",
+                "image/jpeg",
+                "test content".getBytes()
+        );
+
+        String fileName = devProfilePicService.saveProfilePic(file);
+
+        Path savedFilePath = testDirectory.resolve(fileName);
+        assertTrue(Files.exists(savedFilePath), "File should exist after saving");
+        assertEquals("test content", Files.readString(savedFilePath), "File content should match");
+    }
+
+    @Test
+    void testSaveProfilePicNoExtension() throws IOException {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "profile-pic",
+                "image/jpeg",
+                "test content".getBytes()
+        );
+
+        String fileName = devProfilePicService.saveProfilePic(file);
+
+        Path savedFilePath = testDirectory.resolve(fileName);
+        assertTrue(Files.exists(savedFilePath), "File should exist after saving");
+        assertEquals("test content", Files.readString(savedFilePath), "File content should match");
+    }
+
+    @Test
+    void testSaveProfilePicPermissionDenied() throws IOException {
+        // Set restrictive permissions on the directory
+        Files.setPosixFilePermissions(testDirectory, PosixFilePermissions.fromString("r--r--r--"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "profile-pic.jpg",
+                "image/jpeg",
+                "test content".getBytes()
+        );
+
+        // Assert that a FileStorageException is thrown
+        Exception exception = assertThrows(FileStorageException.class, () -> {
+            devProfilePicService.saveProfilePic(file);
+        });
+
+        // Verify the exception type without relying on system-specific messages
+        assertNotNull(exception, "Exception should not be null");
+    }
+
+    @Test
+    void testLoadFileAsResourceSuccess() throws IOException {
+        String fileName = "test-profile-pic.jpg";
+        Path filePath = Files.createFile(testDirectory.resolve(fileName));
+        Files.writeString(filePath, "test content");
+
+        Resource resource = devProfilePicService.loadFileAsResource(fileName);
+
+        assertNotNull(resource, "Resource should not be null");
+        assertTrue(resource.exists(), "Resource should exist");
+        assertEquals("test content", new String(resource.getInputStream().readAllBytes()), "Resource content should match");
+    }
 
     @Test
     void testLoadFileAsResourceInvalidPath() {
@@ -155,6 +224,12 @@ class DevProfilePicServiceTest {
 
         assertTrue(exception.getMessage().contains("I/O error occurred while deleting file"),
                 "Exception message should indicate permission denied");
+    }
+
+    @Test
+    void testDeleteNonExistentFile() {
+        boolean result = devProfilePicService.deletePic("nonexistent-file.jpg");
+        assertFalse(result, "Method should return false for non-existent file");
     }
 
 }
