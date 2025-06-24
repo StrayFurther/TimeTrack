@@ -8,6 +8,7 @@ import strayfurther.backend.dto.LoginRequestDTO;
 import strayfurther.backend.dto.UserRequestDTO;
 import strayfurther.backend.exception.EmailAlreadyUsedException;
 import strayfurther.backend.exception.FileStorageException;
+import strayfurther.backend.exception.JwtUtilException;
 import strayfurther.backend.exception.UserNotFoundException;
 import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
@@ -58,13 +59,15 @@ public class UserService {
         return userRepository.existsByEmail(email.toLowerCase(Locale.ROOT));
     }
 
-    public User getUserFromToken(String token) {
+    public User getUserFromToken(String token) throws UserNotFoundException, JwtUtilException {
         try {
             String email = jwtUtil.extractEmail(token);
             return userRepository.findByEmail(email)
                     .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        } catch (JwtUtilException e) {
+            throw new RuntimeException("Invalid token", e);
         } catch (Exception e) {
-            throw new RuntimeException("Invalid or expired token");
+            throw new UserNotFoundException("User not found or invalid token: " + e.getMessage(), e);
         }
     }
 
@@ -78,7 +81,7 @@ public class UserService {
 
         if (user.getProfilePic() != null) {
             String oldFileName = user.getProfilePic();
-            if (oldFileName != null && !fileService.deletePic(oldFileName)) {
+            if (!fileService.deletePic(oldFileName)) {
                 throw new FileStorageException("Failed to delete old profile picture: " + oldFileName);
             }
         }

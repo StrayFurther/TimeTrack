@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import strayfurther.backend.dto.LoginRequestDTO;
 import strayfurther.backend.exception.FileStorageException;
+import strayfurther.backend.exception.JwtUtilException;
+import strayfurther.backend.exception.UserNotFoundException;
 import strayfurther.backend.service.UserService;
 
 import java.util.Collections;
@@ -70,6 +72,12 @@ public class UserController {
         } catch (FileStorageException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to upload file: " + e.getMessage());
+        } catch(JwtUtilException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Token Problem: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An unexpected error occurred: " + e.getMessage());
         }
     }
 
@@ -87,6 +95,23 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid or missing token");
+        }
+    }
+
+    @GetMapping("/details")
+    public ResponseEntity<?> getUser(@RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = jwtUtil.extractTokenFromHeader(authHeader);
+            return ResponseEntity.ok(userService.getUserFromToken(token));
+        } catch (JwtUtilException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Token Problem: " + e.getMessage());
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User not found: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid or expired token");
         }
     }
 

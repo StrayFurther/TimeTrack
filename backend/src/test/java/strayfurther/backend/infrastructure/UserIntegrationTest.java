@@ -452,4 +452,29 @@ public class UserIntegrationTest {
                 .andExpect(content().string("Profile picture not found"));
     }
 
+    @Test
+    void shouldReturnUserSuccessfully() throws Exception {
+        String token = authenticateTestUser();
+
+        mockMvc.perform(get("/user/details")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userName").value("testUser"))
+                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.role").value("USER"));
+    }
+
+    @Test
+    void shouldFailToReturnUserIfNotFound() throws Exception {
+        String token = authenticateTestUser();
+
+        // Simulate a user deletion
+        userRepository.deleteAll();
+
+        mockMvc.perform(get("/user/details")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string("User not found: User not found or invalid token: User not found with email: test@example.com"));
+    }
+
 }

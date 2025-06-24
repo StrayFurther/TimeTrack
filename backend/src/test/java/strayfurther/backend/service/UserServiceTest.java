@@ -147,7 +147,7 @@ public class UserServiceTest {
                 .build());
 
         // Step 3: Set an existing profile picture for the user
-        User user = userRepository.findByEmail("test@example.com").orElseThrow();
+        userRepository.findByEmail("test@example.com").orElseThrow();
         String oldFileName = userService.uploadProfilePic(token, new MockMultipartFile("file", "old-pic.jpg", "image/jpeg", "test content".getBytes()));
 
         // Step 4: Upload a new profile picture
@@ -168,7 +168,7 @@ public class UserServiceTest {
 
         // Act & Assert
         RuntimeException exception = assertThrows(RuntimeException.class, () -> userService.getUserFromToken(invalidToken));
-        assertEquals("Invalid or expired token", exception.getMessage());
+        assertTrue(exception.getMessage().contains("User not found or invalid token: JWT strings must contain exactly 2 period characters"));
     }
 
     @Test
@@ -185,7 +185,7 @@ public class UserServiceTest {
         try {
             // Act & Assert
             RuntimeException exception = assertThrows(RuntimeException.class, () -> userService.getUserFromToken(token));
-            assertEquals("Invalid or expired token", exception.getMessage());
+            assertEquals("User not found or invalid token: User not found with email: test@example.com", exception.getMessage());
         } finally {
             // Reset the time zone to the original
             System.setProperty("user.timezone", originalTimeZone);
