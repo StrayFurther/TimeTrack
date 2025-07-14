@@ -4,10 +4,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -18,9 +16,9 @@ import strayfurther.backend.service.ProfilePicService;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
 class SecurityConfigTest {
@@ -36,6 +34,12 @@ class SecurityConfigTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private SecurityConfig securityConfig;
+
+    @Autowired
+    private ProfilePicService profilePicService;
 
     @BeforeEach
     void setUp() {
@@ -53,60 +57,37 @@ class SecurityConfigTest {
     }
 
     @Nested
-    @ActiveProfiles("dev")
-    class ProdProfileTests {
-
-        @Autowired
-        private SecurityConfig securityConfig;
-
-        @Autowired
-        @Qualifier("devProfilePicService")
-        private ProfilePicService profilePicService;
+    class DevProfileTests {
 
         @Test
         void testSecurityFilterChainWithNonTestProfile() throws Exception {
             // Act: Build the security filter chain
-            SecurityFilterChain filterChain = securityConfig.securityFilterChain(null);
+            SecurityFilterChain filterChain = securityConfig.devSecurityFilterChain(null);
 
             // Assert: Ensure the filter chain is not null
             assertNotNull(filterChain, "SecurityFilterChain should be created successfully");
         }
 
         @Test
-        void shouldRedirectHttpToHttps() throws Exception {
-            mockMvc.perform(post("http://localhost/user/register")
-                            .contentType(MediaType.APPLICATION_JSON)
+        void shouldAllowAccessToPublicEndpoints() throws Exception {
+            mockMvc.perform(post("/user/register")
+                            .contentType("application/json")
                             .content("""
-                    {
-                        "userName": "testUser",
-                        "email": "test@example.com",
-                        "password": "Password123!"
-                    }
-                    """))
-                    .andExpect(status().isFound()) // 302 status for redirection
-                    .andExpect(header().string("Location", "https://localhost/user/register")); // Ensure redirection to HTTPS
+                            {
+                                "userName": "testUser",
+                                "email": "test@example.com",
+                                "password": "Password123!"
+                            }
+                            """))
+                    .andExpect(status().isCreated());
         }
-    }
 
-    @Test
-    void shouldAllowAccessToPublicEndpoints() throws Exception {
-        String registerRequest = """
-        {
-            "userName": "testUser",
-            "email": "test@example.com",
-            "password": "Password123!"
+        @Test
+        void shouldRequireAuthenticationForProtectedEndpoints() throws Exception {
+            mockMvc.perform(post("/user/profile-pic").secure(true))
+                    .andExpect(status().isForbidden());
         }
-        """;
 
-        mockMvc.perform(post("/user/register").secure(true)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerRequest))
-                .andExpect(status().isCreated());
     }
 
-    @Test
-    void shouldRequireAuthenticationForProtectedEndpoints() throws Exception {
-        mockMvc.perform(post("/user/profile-pic").secure(true))
-                .andExpect(status().isForbidden());
-    }
 }

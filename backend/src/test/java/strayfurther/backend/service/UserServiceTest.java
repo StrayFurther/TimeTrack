@@ -12,6 +12,7 @@ import strayfurther.backend.dto.LoginRequestDTO;
 import strayfurther.backend.dto.UserRequestDTO;
 import strayfurther.backend.exception.EmailAlreadyUsedException;
 import strayfurther.backend.exception.FileStorageException;
+import strayfurther.backend.exception.JwtUtilException;
 import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 import strayfurther.backend.util.JwtUtil;
@@ -79,14 +80,15 @@ public class UserServiceTest {
                 .password("password123")
                 .build();
 
-        String token = userService.loginUser(loginRequest);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = userService.loginUser(loginRequest, userAgent);
 
         assertNotNull(token);
     }
 
+
     @Test
     void testLoginUserWithInvalidCredentials() {
-        // Arrange
         UserRequestDTO userRequest = UserRequestDTO.builder()
                 .userName("testuser")
                 .email("test@example.com")
@@ -94,19 +96,21 @@ public class UserServiceTest {
                 .build();
         userService.registerUser(userRequest);
 
-        // Act & Assert: Wrong password
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+
+        // Wrong password
         LoginRequestDTO wrongPasswordRequest = LoginRequestDTO.builder()
                 .email("test@example.com")
                 .password("wrongpassword")
                 .build();
-        assertNull(userService.loginUser(wrongPasswordRequest));
+        assertNull(userService.loginUser(wrongPasswordRequest, userAgent));
 
-        // Act & Assert: Non-existent user
+        // Non-existent user
         LoginRequestDTO nonExistentUserRequest = LoginRequestDTO.builder()
                 .email("nonexistent@example.com")
                 .password("password123")
                 .build();
-        assertNull(userService.loginUser(nonExistentUserRequest));
+        assertNull(userService.loginUser(nonExistentUserRequest, userAgent));
     }
 
     @Test
@@ -119,10 +123,11 @@ public class UserServiceTest {
         userService.registerUser(userRequest);
 
         MultipartFile file = new MockMultipartFile("file", "profile-pic.jpg", "image/jpeg", "test content".getBytes());
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
         String token = userService.loginUser(LoginRequestDTO.builder()
                 .email("test@example.com")
                 .password("password123")
-                .build());
+                .build(), userAgent);
         userService.uploadProfilePic(token, file);
 
         Resource resource = userService.getUserProfilePic(token);
@@ -132,7 +137,6 @@ public class UserServiceTest {
 
     @Test
     void testUploadProfilePicWithExistingPic() throws FileStorageException {
-        // Step 1: Register a user
         UserRequestDTO userRequest = UserRequestDTO.builder()
                 .userName("testuser")
                 .email("test@example.com")
@@ -140,21 +144,17 @@ public class UserServiceTest {
                 .build();
         userService.registerUser(userRequest);
 
-        // Step 2: Log in the user to get a token
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
         String token = userService.loginUser(LoginRequestDTO.builder()
                 .email("test@example.com")
                 .password("password123")
-                .build());
+                .build(), userAgent);
 
-        // Step 3: Set an existing profile picture for the user
-        userRepository.findByEmail("test@example.com").orElseThrow();
         String oldFileName = userService.uploadProfilePic(token, new MockMultipartFile("file", "old-pic.jpg", "image/jpeg", "test content".getBytes()));
 
-        // Step 4: Upload a new profile picture
         MultipartFile newFile = new MockMultipartFile("file", "new-pic.jpg", "image/jpeg", "test content".getBytes());
         String newFileName = userService.uploadProfilePic(token, newFile);
 
-        // Assertions
         assertNotNull(newFileName);
         assertNotEquals(oldFileName, newFileName);
         User updatedUser = userRepository.findByEmail("test@example.com").orElseThrow();
@@ -172,10 +172,44 @@ public class UserServiceTest {
     }
 
     @Test
+    void testLoginUserWithMissingOrWrongUserAgent() {
+        String userEmail = "test@example.com";
+        String userPasword = "password123";
+        UserRequestDTO userRequest = UserRequestDTO.builder()
+                .userName("testuser")
+                .email(userEmail)
+                .password(userPasword)
+                .build();
+        userService.registerUser(userRequest);
+
+        LoginRequestDTO loginRequest = LoginRequestDTO.builder()
+                .email(userEmail)
+                .password(userPasword)
+                .build();
+
+        // Test with empty or missing User-Agent
+        JwtUtilException missingUserAgentException = assertThrows(JwtUtilException.class, () ->
+                userService.loginUser(loginRequest, null)
+        );
+        assertEquals("userAgent cannot be null or empty", missingUserAgentException.getMessage());
+
+        missingUserAgentException = assertThrows(JwtUtilException.class, () ->
+                userService.loginUser(loginRequest, "")
+        );
+        assertEquals("userAgent cannot be null or empty", missingUserAgentException.getMessage());
+
+        // Test with incorrect User-Agent
+        String incorrectUserAgent = "InvalidUserAgent";
+        String token = userService.loginUser(loginRequest, "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+        assertEquals(false, jwtUtil.isTokenValid(token, userEmail, incorrectUserAgent));
+    }
+
+    @Test
     void testGetUserFromTokenWithExpiredToken() {
         // Arrange
         String email = "test@example.com";
-        String token = jwtUtil.generateToken(email); // Generate a valid token
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent); // Generate a valid token
 
         // Simulate time forwarding by changing the system time zone
         String originalTimeZone = System.getProperty("user.timezone");

@@ -10,8 +10,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import strayfurther.backend.repository.UserRepository;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -21,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @SpringBootTest
 @ActiveProfiles("test")
-@TestPropertySource(locations = "classpath:application-test.properties")
 public class UserIntegrationTest {
 
     @Autowired
@@ -54,7 +53,8 @@ public class UserIntegrationTest {
 
         String jsonResponse = mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest))
+                        .content(loginRequest)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -176,7 +176,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
@@ -191,7 +192,8 @@ public class UserIntegrationTest {
                 """;
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid credentials"));
     }
@@ -252,7 +254,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(loginRequest))
+                        .content(loginRequest)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
@@ -323,7 +326,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.filePath").exists());
     }
@@ -342,7 +346,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("File too large"));
     }
@@ -360,7 +365,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Invalid file type"));
     }
@@ -393,12 +399,14 @@ public class UserIntegrationTest {
 
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.filePath").exists());
 
         mockMvc.perform(get("/user/profile-pic")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_JPEG));
     }
@@ -408,7 +416,8 @@ public class UserIntegrationTest {
         String token = authenticateTestUser();
 
         mockMvc.perform(get("/user/profile-pic")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Profile picture not found"));
     }
@@ -447,7 +456,8 @@ public class UserIntegrationTest {
         });
 
         mockMvc.perform(get("/user/profile-pic")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Profile picture not found"));
     }
@@ -456,12 +466,14 @@ public class UserIntegrationTest {
     void shouldReturnUserSuccessfully() throws Exception {
         String token = authenticateTestUser();
 
-        mockMvc.perform(get("/user/details")
-                        .header("Authorization", "Bearer " + token))
+        MvcResult result = mockMvc.perform(get("/user/details")
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userName").value("testUser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
-                .andExpect(jsonPath("$.role").value("USER"));
+                .andExpect(jsonPath("$.role").value("USER")).andReturn();
+        System.out.println(result.getResponse().getContentAsString());
     }
 
     @Test
@@ -472,7 +484,8 @@ public class UserIntegrationTest {
         userRepository.deleteAll();
 
         mockMvc.perform(get("/user/details")
-                        .header("Authorization", "Bearer " + token))
+                        .header("Authorization", "Bearer " + token)
+                        .header("User-Agent", "IntegrationTestAgent/1.0"))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("User not found: User not found or invalid token: User not found with email: test@example.com"));
     }

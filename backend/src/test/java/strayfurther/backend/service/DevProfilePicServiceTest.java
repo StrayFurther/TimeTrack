@@ -7,9 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import strayfurther.backend.exception.FileStorageException;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.nio.channels.FileChannel;
 import java.util.Comparator;
 
 import java.io.IOException;
@@ -17,6 +17,7 @@ import java.nio.file.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ActiveProfiles("dev")
 @SpringBootTest
 class DevProfilePicServiceTest {
 

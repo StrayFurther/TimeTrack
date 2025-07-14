@@ -8,7 +8,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
+import strayfurther.backend.config.whitelist.PermittedEndpoints;
 import strayfurther.backend.security.JwtAuthenticationToken;
 import strayfurther.backend.util.JwtUtil;
 
@@ -18,6 +20,8 @@ import java.io.IOException;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private static final AntPathMatcher pathMatcher = new AntPathMatcher();
+
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
@@ -35,8 +39,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
         try {
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                String email = jwtUtil.extractEmail(token);
-                if (email != null && jwtUtil.isTokenValid(token, email)) {
+                String email = jwtUtil.extractJWTDetails(token).getEmail();
+                if (email != null && jwtUtil.isTokenValid(token, email, request.getHeader("User-Agent"))) {
                     var authToken = new JwtAuthenticationToken(email, token, null);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
@@ -47,5 +51,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        System.out.println("Checking if path is whitelisted: '" + path + "'");
+        boolean isPermitted = PermittedEndpoints.POST_ENDPOINTS.stream().anyMatch(endpoint -> pathMatcher.match(endpoint, path)) ||
+                PermittedEndpoints.GET_ENDPOINTS.stream().anyMatch(endpoint -> pathMatcher.match(endpoint, path));
+        System.out.println("Path is whitelisted: " + isPermitted);
+        return isPermitted;
     }
 }

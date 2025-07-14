@@ -4,6 +4,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
+import strayfurther.backend.dto.JWTContentDTO;
 import strayfurther.backend.util.JwtUtil;
 
 @Component
@@ -18,13 +19,19 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String token = (String) authentication.getCredentials();
-        String email = jwtUtil.extractEmail(token);
+        try {
+            JWTContentDTO jwtDetails = jwtUtil.extractJWTDetails(token);
+            String email = jwtDetails.getEmail();
+            String userAgent = jwtDetails.getUserAgent();
 
-        if (email == null || !jwtUtil.isTokenValid(token, email)) {
-            throw new AuthenticationException("Invalid JWT token") {};
+            if (email == null || userAgent == null || !jwtUtil.isTokenValid(token, email, userAgent)) {
+                throw new AuthenticationException("Invalid JWT token") {};
+            }
+
+            return new JwtAuthenticationToken(null, token, null); // No authorities needed
+        } catch (Exception e) {
+            throw new AuthenticationException("Token validation failed", e) {};
         }
-
-        return new JwtAuthenticationToken(email, token, null); // No authorities needed
     }
 
     @Override

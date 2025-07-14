@@ -45,14 +45,14 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public String loginUser(LoginRequestDTO loginRequest) {
+    public String loginUser(LoginRequestDTO loginRequest, String userAgent) {
         String normalizedEmail = loginRequest.getEmail().toLowerCase(Locale.ROOT);
         Optional<User> userOptional = userRepository.findByEmail(normalizedEmail);
         if (userOptional.isEmpty() || !passwordEncoder.matches(loginRequest.getPassword(), userOptional.get().getPassword())) {
             return null;
         }
-        return jwtUtil.generateToken(userOptional.get().getEmail());
 
+        return jwtUtil.generateToken(userOptional.get().getEmail(), userAgent);
     }
 
     public boolean emailExists(String email) {
@@ -61,7 +61,7 @@ public class UserService {
 
     public User getUserFromToken(String token) throws UserNotFoundException, JwtUtilException {
         try {
-            String email = jwtUtil.extractEmail(token);
+            String email = jwtUtil.extractJWTDetails(token).getEmail();
             return userRepository.findByEmail(email)
                     .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
         } catch (JwtUtilException e) {

@@ -1,5 +1,8 @@
 package strayfurther.backend.config;
 
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -8,13 +11,15 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.filter.ForwardedHeaderFilter;
+import strayfurther.backend.config.whitelist.PermittedEndpoints;
 import strayfurther.backend.filter.JwtAuthenticationFilter;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
@@ -39,22 +44,53 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/user/register", "/api/user/login", "/user/register", "/user/login", "/user/exists/**", "/api/user/exists/**").permitAll()
-                        .anyRequest().authenticated());
+    @Profile({"dev", "test"})
+    public SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
+        System.out.println("RUNNING IN DEV OR TEST PROFILE");
+        // Disable CSRF protection for development
+        http.csrf(csrf -> csrf.disable());
 
-        // Conditionally enforce HTTPS based on the active profile
-        if (!isTestProfileActive()) {
-            http.requiresChannel(channel -> channel.anyRequest().requiresSecure()) // Redirect all HTTP to HTTPS
-                    .headers(headers -> headers
-                            .httpStrictTransportSecurity(hsts -> hsts
-                                    .includeSubDomains(true)
-                                    .maxAgeInSeconds(31536000))); // Add HSTS header
-        }
+        http.authorizeHttpRequests(auth -> {
+            // Permit all POST endpoints from PermittedEndpoints
+            Arrays.stream(PermittedEndpoints.POST_ENDPOINTS.toArray(String[]::new)).forEach(e -> System.out.println("Permitting POST endpoint: " + e));
+            auth.requestMatchers(HttpMethod.POST, PermittedEndpoints.POST_ENDPOINTS.toArray(String[]::new)).permitAll();
+            // Permit all GET endpoints from PermittedEndpoints
+            auth.requestMatchers(HttpMethod.GET, PermittedEndpoints.GET_ENDPOINTS.toArray(String[]::new)).permitAll();
+            // Ensure any other request is authenticated
+            auth.anyRequest().authenticated();
+        });
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    @Bean
+    @Profile("prod")
+    public SecurityFilterChain prodSecurityFilterChain(HttpSecurity http) throws Exception {
+        // Disable CSRF protection. Using JWT for authentication, CSRF protection is not needed.
+        http.csrf(csrf -> csrf.disable());
+
+        http.authorizeHttpRequests(auth -> {
+            PermittedEndpoints.POST_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(HttpMethod.POST, endpoint).permitAll());
+            PermittedEndpoints.GET_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(HttpMethod.GET, endpoint).permitAll());
+            auth.anyRequest().authenticated();
+        });
+
+        // Remove requiresSecure() and block HTTP requests explicitly
+        http.addFilterBefore(new ForwardedHeaderFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        // Custom filter to block HTTP requests
+        http.addFilterBefore((request, response, chain) -> {
+            if (!request.isSecure()) {
+                if (response instanceof HttpServletResponse) {
+                    ((HttpServletResponse) response).sendError(HttpServletResponse.SC_FORBIDDEN, "HTTP requests are not allowed");
+                }
+            } else {
+                chain.doFilter(request, response);
+            }
+        }, ForwardedHeaderFilter.class);
 
         return http.build();
     }
@@ -64,14 +100,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // necessary for testing purposes
-    private boolean isTestProfileActive() {
-        String[] activeProfiles = environment.getActiveProfiles();
-        for (String profile : activeProfiles) {
-            if ("test".equals(profile)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }

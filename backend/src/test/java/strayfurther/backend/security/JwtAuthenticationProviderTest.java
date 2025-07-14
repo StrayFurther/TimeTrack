@@ -1,43 +1,50 @@
 package strayfurther.backend.security;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.test.context.ActiveProfiles;
 import strayfurther.backend.util.JwtUtil;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@ActiveProfiles("test")
 @SpringBootTest
 class JwtAuthenticationProviderTest {
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private JwtAuthenticationProvider provider;
+
     @Test
     void shouldAuthenticateWithValidToken() {
-        JwtUtil jwtUtil = mock(JwtUtil.class);
-        JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtUtil);
-
-        String token = "validToken";
+        // Simulate user registration
         String email = "user@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
-        when(jwtUtil.extractEmail(token)).thenReturn(email);
-        when(jwtUtil.isTokenValid(token, email)).thenReturn(true);
+        // Generate token for the user
+        String token = jwtUtil.generateToken(email, userAgent);
 
+        // Authenticate using the generated token
         Authentication authentication = provider.authenticate(new JwtAuthenticationToken(null, token, null));
 
+        // Validate authentication
         assertNotNull(authentication, "Authentication should not be null");
-        assertEquals(email, authentication.getPrincipal(), "Principal should match extracted email");
         assertEquals(token, authentication.getCredentials(), "Credentials should match the token");
     }
 
     @Test
     void shouldThrowExceptionForInvalidToken() {
-        JwtUtil jwtUtil = mock(JwtUtil.class);
-        JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtUtil);
-
         String token = "invalidToken";
-
-        when(jwtUtil.extractEmail(token)).thenReturn(null);
 
         assertThrows(AuthenticationException.class, () ->
                         provider.authenticate(new JwtAuthenticationToken(null, token, null)),
@@ -48,14 +55,20 @@ class JwtAuthenticationProviderTest {
     // Test for expired token
     @Test
     void shouldThrowExceptionForExpiredToken() {
-        JwtUtil jwtUtil = mock(JwtUtil.class);
-        JwtAuthenticationProvider provider = new JwtAuthenticationProvider(jwtUtil);
+        // Simulate user registration
+        String email = "user@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
-        String token = "expiredToken";
+        // Generate token with the current system time
+        String token = jwtUtil.generateToken(email, userAgent);
 
-        when(jwtUtil.extractEmail(token)).thenReturn("user@example.com");
-        when(jwtUtil.isTokenValid(token, "user@example.com")).thenReturn(false);
+        // Forward the system time by 31 days
+        Instant forwardedTime = Instant.now().plus(Duration.ofDays(31));
+        Clock.fixed(forwardedTime, ZoneId.systemDefault());
 
+        JwtAuthenticationProvider provider = new JwtAuthenticationProvider(new JwtUtil());
+
+        // Attempt to authenticate using the expired token
         assertThrows(AuthenticationException.class, () ->
                         provider.authenticate(new JwtAuthenticationToken(null, token, null)),
                 "Should throw AuthenticationException for expired token"

@@ -1,19 +1,19 @@
 package strayfurther.backend.util;
 
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import strayfurther.backend.dto.JWTContentDTO;
 import strayfurther.backend.exception.JwtUtilException;
 
 import java.lang.reflect.Field;
-import java.nio.charset.StandardCharsets;
-import java.util.Date;
+import java.time.Instant;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,7 +24,6 @@ class JwtUtilTest {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Autowired
     @Value("${jwt.secret}")
     private String oldSecretKey;
 
@@ -39,7 +38,8 @@ class JwtUtilTest {
     @Test
     void testGenerateToken() {
         String email = "test@example.com";
-        String token = jwtUtil.generateToken(email);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
         assertNotNull(token, "Token should not be null");
         assertTrue(token.startsWith("eyJ"), "Token should be a valid JWT");
@@ -48,9 +48,10 @@ class JwtUtilTest {
     @Test
     void testGenerateTokenFailsNoEmail() {
         String email = null;
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
         Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.generateToken(email);
+            jwtUtil.generateToken(email, userAgent);
         });
 
         assertEquals("Email cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
@@ -59,85 +60,105 @@ class JwtUtilTest {
     @Test
     void testGenerateTokenFailsEmptyEmail() {
         String email = "";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
         Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.generateToken(email);
+            jwtUtil.generateToken(email, userAgent);
         });
 
         assertEquals("Email cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
     }
 
     @Test
-    void testExtractEmail() {
+    void testGenerateTokenFailsNoUserAgent() {
+        String email = "test@mail.com";
+
+        Exception exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.generateToken(email, null);
+        });
+
+        assertEquals("userAgent cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
+    }
+
+    @Test
+    void testGenerateTokenFailsEmptyUserAgent() {
+        String email = "test@mail.com";
+
+        Exception exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.generateToken(email, "");
+        });
+
+        assertEquals("userAgent cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
+    }
+
+    @Test
+    void testExtractDetails() {
         String email = "test@example.com";
-        String token = jwtUtil.generateToken(email);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
-        String extractedEmail = jwtUtil.extractEmail(token);
-        assertEquals(email, extractedEmail, "Extracted email should match the original email");
+        JWTContentDTO jwtContentDTO = jwtUtil.extractJWTDetails(token);
+        assertEquals(email, jwtContentDTO.getEmail(), "Extracted email should match the original email");
+        assertEquals(userAgent, jwtContentDTO.getUserAgent(), "Extracted user agent should match the original user agent");
     }
 
     @Test
-    void testExtractEmptyEmailFails() {
-        String email = "";
-
+    void testEactractDetailsWithNullOrEmptyToken() {
         Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.generateToken(email);
+            jwtUtil.extractJWTDetails(null);
         });
 
-        assertEquals("Email cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
-    }
+        assertEquals("Token cannot be null or empty", exception.getMessage(), "Exception message should indicate the token is null or empty");
 
-    @Test
-    void testExtractNullEmailFails() {
-        String email = null;
-
-        Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.generateToken(email);
+        exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.extractJWTDetails("");
         });
 
-        assertEquals("Email cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
+        assertEquals("Token cannot be null or empty", exception.getMessage(), "Exception message should indicate the token is null or empty");
     }
 
     @Test
     void testIsTokenValid() {
         String email = "test@example.com";
-        String token = jwtUtil.generateToken(email);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
-        assertTrue(jwtUtil.isTokenValid(token, email), "Token should be valid for the given email");
+        assertTrue(jwtUtil.isTokenValid(token, email, userAgent), "Token should be valid for the given email");
     }
 
     @Test
-    void testIsTokenValidExpiredToken() throws Exception {
+    void testIsTokenValidExpiredToken() {
         String email = "test@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
-        // Access the private `secretKey` field using reflection
-        Field secretKeyField = JwtUtil.class.getDeclaredField("secretKey");
-        secretKeyField.setAccessible(true);
-        String secretKey = (String) secretKeyField.get(jwtUtil);
+        // Generate a valid token
+        String token = jwtUtil.generateToken(email, userAgent);
 
-        String expiredToken = Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date(System.currentTimeMillis() - 1000L * 60 * 60 * 24)) // Issued 1 day ago
-                .setExpiration(new Date(System.currentTimeMillis() - 1000L * 60 * 60)) // Expired 1 hour ago
-                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8)), SignatureAlgorithm.HS256)
-                .compact();
+        // Forward the system time to simulate token expiration
+        Instant expiredTime = Instant.now().plus(Duration.ofDays(31));
+        Clock.fixed(expiredTime, ZoneId.systemDefault());
 
-        assertFalse(jwtUtil.isTokenValid(expiredToken, email), "Expired token should not be valid");
+        // Create a new temporary JwtUtil object
+        JwtUtil tempJwtUtil = new JwtUtil();
+
+        // Validate the token using the temporary JwtUtil object
+        assertFalse(tempJwtUtil.isTokenValid(token, email, userAgent), "Expired token should not be valid");
     }
 
     @Test
     void testIsTokenValidEmptyOrNullEmailParameter() {
         String email = "test@example.com";
-        String token = jwtUtil.generateToken(email);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
         Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.isTokenValid(token, null);
+            jwtUtil.isTokenValid(token, null, userAgent);
         });
 
         assertEquals("Email cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
 
         exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.isTokenValid(token, "");
+            jwtUtil.isTokenValid(token, "", userAgent);
         });
 
         assertEquals("Email cannot be null or empty", exception.getMessage(), "Exception message should indicate the email is null or empty");
@@ -145,29 +166,61 @@ class JwtUtilTest {
     }
 
     @Test
-    void testIsTokenValidEmptyOrNullTokenParameter() {
+    void testIsTokenValidEmptyOrNullUserAgentParameter() {
         String email = "test@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
         Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.isTokenValid(null, email);
+            jwtUtil.isTokenValid(token, email, null);
+        });
+
+        assertEquals("userAgent cannot be null or empty", exception.getMessage(), "Exception message should indicate the User-Agent is null or empty");
+
+        exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.isTokenValid(token, email, "");
+        });
+
+        assertEquals("userAgent cannot be null or empty", exception.getMessage(), "Exception message should indicate the User-Agent is null or empty");
+    }
+
+    @Test
+    void testIsTokenValidEmptyOrNullTokenParameter() {
+        String email = "test@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+
+        Exception exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.isTokenValid(null, email, userAgent);
         });
 
         assertEquals("Token cannot be null or empty", exception.getMessage(), "Exception message should indicate the Token is null or empty");
 
         exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.isTokenValid("", "");
+            jwtUtil.isTokenValid("", "", userAgent);
         });
 
         assertEquals("Token cannot be null or empty", exception.getMessage(), "Exception message should indicate the Token is null or empty");
+
+        exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.isTokenValid(" ", email, "");
+        });
+
+        assertEquals("userAgent cannot be null or empty", exception.getMessage(), "Exception message should indicate the User-Agent is null or empty");
+
+        exception = assertThrows(JwtUtilException.class, () -> {
+            jwtUtil.isTokenValid(" ", email, null);
+        });
+        assertEquals("userAgent cannot be null or empty", exception.getMessage(), "Exception message should indicate the User-Agent is null or empty");
 
     }
 
     @Test
     void testIsTokenValidWrongEmail() {
         String email = "test@example.com";
-        String token = jwtUtil.generateToken(email);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
-        assertEquals(false, jwtUtil.isTokenValid(token, "bro@mail.com"), "Token and email combination should not be valid for a different email");
+        assertEquals(false, jwtUtil.isTokenValid(token, "bro@mail.com", userAgent), "Token and email combination should not be valid for a different email");
     }
 
     @Test
@@ -175,36 +228,48 @@ class JwtUtilTest {
         // Access the private `secretKey` field using reflection
         Field secretKeyField = JwtUtil.class.getDeclaredField("secretKey");
         secretKeyField.setAccessible(true);
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
 
         // Set the `secretKey` to null
         secretKeyField.set(jwtUtil, null);
 
         Exception exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.generateToken("test@example.com");
+            jwtUtil.generateToken("test@example.com", userAgent);
         });
         assertEquals("Secret key cannot be null or empty", exception.getMessage(), "Exception message should indicate the secret key is null or empty");
 
         // Set the `secretKey` to an empty string
         secretKeyField.set(jwtUtil, "");
         exception = assertThrows(JwtUtilException.class, () -> {
-            jwtUtil.generateToken("test@example.com");
+            jwtUtil.generateToken("test@example.com", userAgent);
         });
         assertEquals("Secret key cannot be null or empty", exception.getMessage(), "Exception message should indicate the secret key is null or empty");
     }
     @Test
     void testIsTokenValidWrongTokenForEmail() {
         String email = "test@example.com";
-        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0LndhbGRyYWZmOTVAZ214LmRlIiwiaWF0IjoxNzQ5NzIwNDMxLCJleHAiOjE3NTIzMTI0MzF9.drrJPrHrdAbcbYqMaAqueA-Pqo4DK5JjHqTszjKJ1GM";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
 
-        assertEquals(false, jwtUtil.isTokenValid(token, "bro@mail.com"), "Token and email combination should not be valid for an unmatching token");
+        assertEquals(false, jwtUtil.isTokenValid(token, "bro@mail.com", userAgent), "Token and email combination should not be valid for an unmatching token");
+    }
+
+    @Test
+    void testIsTokenValidWrongTokenForUserAgent() {
+        String email = "test@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
+        String token = jwtUtil.generateToken(email, userAgent);
+
+        assertEquals(false, jwtUtil.isTokenValid(token, email, "PostmanRuntime/7.28.4"), "Token and user agent combination should not be valid for an unmatching user agent");
     }
 
     @Test
     void testIsTokenValidInvalidToken() {
         String email = "test@example.com";
+        String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
         String token = "some sicko token that is not valid";
 
-        assertEquals(false, jwtUtil.isTokenValid(token, "bro@mail.com"), "Token and email combination should not be valid for an invalid token");
+        assertEquals(false, jwtUtil.isTokenValid(token, email, userAgent), "Token and email combination should not be valid for an invalid token");
     }
 
     @Test

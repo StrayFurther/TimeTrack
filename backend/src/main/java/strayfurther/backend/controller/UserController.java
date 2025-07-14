@@ -32,13 +32,15 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRequestDTO userRequest) {
+        System.out.println("Registering user: " + userRequest.getEmail());
         userService.registerUser(userRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequestDTO loginRequest) {
-        String token = userService.loginUser(loginRequest);
+    public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequestDTO loginRequest,
+                                       @RequestHeader("User-Agent") String userAgent) {
+        String token = userService.loginUser(loginRequest, userAgent);
         if (token != null) {
             return ResponseEntity.ok(Collections.singletonMap("token", token));
         } else {
