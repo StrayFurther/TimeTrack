@@ -17,15 +17,16 @@ import org.springframework.core.io.Resource;
 @Service
 public class DevProfilePicService implements ProfilePicService {
 
-    private final Path rootLocation;
+    private final Path directory;
 
-    public DevProfilePicService(@Value("${profile.pics.location:uploads/profile-pics}") String rootLocation) {
-        this.rootLocation = Paths.get(rootLocation).toAbsolutePath().normalize();
+    public DevProfilePicService(@Value("${profile.pics.location:uploads/profile-pics}") String uploadLocation) {
+        Path rootLocation = Paths.get(System.getProperty("user.dir"));
+        this.directory = Paths.get(rootLocation.toAbsolutePath() + "/" + uploadLocation);
     }
 
     @Override
     public String getProfilePicPath(String fileName) {
-        return rootLocation.resolve(fileName).toString();
+        return directory.resolve(fileName).toString();
     }
 
     @Override
@@ -34,9 +35,8 @@ public class DevProfilePicService implements ProfilePicService {
             throw new FileStorageException("Empty files are not allowed.");
         }
         try {
-            Files.createDirectories(rootLocation);
             String fileName = UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
-            Path filePath = rootLocation.resolve(fileName);
+            Path filePath = directory.resolve(fileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
             return fileName;
         } catch (IOException e) {
@@ -51,8 +51,8 @@ public class DevProfilePicService implements ProfilePicService {
     @Override
     public Resource loadFileAsResource(String fileName) throws FileStorageException {
         try {
-            Path path = rootLocation.resolve(Paths.get(fileName)).normalize();
-            if (!path.startsWith(rootLocation)) {
+            Path path = directory.resolve(Paths.get(fileName)).normalize();
+            if (!path.startsWith(directory)) {
                 throw new FileStorageException("Invalid file path: " + fileName);
             }
             if (Files.exists(path)) {

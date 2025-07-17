@@ -55,6 +55,7 @@ public class UserController {
     public ResponseEntity<?> checkEmailExists(@RequestParam String email) {
         System.out.println("EEEEEEEMAIL: " + email);
         boolean exists = userService.emailExists(email.toLowerCase(Locale.ROOT));
+        System.out.println("EEEEEEEMAIL: " + exists);
         return ResponseEntity.ok(exists);
     }
 

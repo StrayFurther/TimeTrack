@@ -1,6 +1,7 @@
 package strayfurther.backend.config;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.context.annotation.Bean;
@@ -15,12 +16,18 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.ForwardedHeaderFilter;
 import strayfurther.backend.config.whitelist.PermittedEndpoints;
+import strayfurther.backend.filter.CorsPreflightFilter;
 import strayfurther.backend.filter.JwtAuthenticationFilter;
+import strayfurther.backend.filter.RequestOriginValidationFilter;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -28,13 +35,19 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationProvider jwtAuthenticationProvider;
+    private final RequestOriginValidationFilter requestOriginValidationFilter;
+    private final CorsPreflightFilter corsPreflightFilter;
     private final Environment environment;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           AuthenticationProvider jwtAuthenticationProvider,
+                          RequestOriginValidationFilter requestOriginValidationFilter,
+                          CorsPreflightFilter corsFilter,
                           Environment environment) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.jwtAuthenticationProvider = jwtAuthenticationProvider;
+        this.requestOriginValidationFilter = requestOriginValidationFilter;
+        this.corsPreflightFilter = corsFilter;
         this.environment = environment;
     }
 
@@ -48,17 +61,18 @@ public class SecurityConfig {
     public SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
         System.out.println("RUNNING IN DEV OR TEST PROFILE");
         // Disable CSRF protection for development
-        http.csrf(csrf -> csrf.disable());
+        http.cors().and().csrf(csrf -> csrf.disable());
 
+        // Explicitly allow OPTIONS requests for CORS preflight
         http.authorizeHttpRequests(auth -> {
-            // Permit all POST endpoints from PermittedEndpoints
-            Arrays.stream(PermittedEndpoints.POST_ENDPOINTS.toArray(String[]::new)).forEach(e -> System.out.println("Permitting POST endpoint: " + e));
+            System.out.println("AUTHORIZED IN DEV OR TEST PROFILE");
             auth.requestMatchers(HttpMethod.POST, PermittedEndpoints.POST_ENDPOINTS.toArray(String[]::new)).permitAll();
-            // Permit all GET endpoints from PermittedEndpoints
             auth.requestMatchers(HttpMethod.GET, PermittedEndpoints.GET_ENDPOINTS.toArray(String[]::new)).permitAll();
-            // Ensure any other request is authenticated
             auth.anyRequest().authenticated();
         });
+        System.out.println("RUNNING IN TEST PROFILE");
+        http.addFilterBefore(corsPreflightFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(requestOriginValidationFilter, UsernamePasswordAuthenticationFilter.class);
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -78,7 +92,8 @@ public class SecurityConfig {
         });
 
         // Remove requiresSecure() and block HTTP requests explicitly
-        http.addFilterBefore(new ForwardedHeaderFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(corsPreflightFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(requestOriginValidationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         // Custom filter to block HTTP requests

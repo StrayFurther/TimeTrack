@@ -4,30 +4,24 @@ import { environment } from '../../../env/env';
 import {catchError, Observable, of, tap} from 'rxjs';
 import {LoginResponse} from '../../models/login-response';
 import { RegisterResponse } from '../../models/register-response';
+import { User } from '../../models/user';
+import {UserDetailComponent} from '../../pages/user/user-detail/user-detail.component';
+import { UserDetailResponse } from '../../models/user-detail-response';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
-  private user: any = null;
   private httpClient = inject(HttpClient);
   private apiUrl = environment.apiUrl;
   private jwtToken?: string = localStorage.getItem(environment.jwtTokenName) || undefined;
 
-  setUser(user: any): void {
-    this.user = user;
-  }
-
-  getUser(): any {
-    return this.user;
-  }
 
   isAuthenticated(): boolean {
-    return this.user !== null;
+    return this.jwtToken !== null;
   }
 
-  clearUser(): void {
-    this.user = null;
+  clearToken(): void {
     this.jwtToken = undefined;
     localStorage.removeItem(environment.jwtTokenName);
   }
@@ -64,6 +58,19 @@ export class UserService {
   register(email: string, password: string, userName: string): Observable<RegisterResponse> {
     return this.httpClient.post<RegisterResponse>(`${this.apiUrl}/user/register`, { email, password, userName }).pipe(
       catchError((error) => of({ error })),
+    );
+  }
+
+  fetchActiveUser(): Observable<UserDetailResponse> {
+    return this.httpClient.get<UserDetailResponse>(`${this.apiUrl}/user/details`, {
+      headers: {
+        Authorization: `Bearer ${this.jwtToken}`,
+      },
+    }).pipe(
+      catchError((error) => {
+        console.error('Failed to fetch user details', error);
+        throw error; // Rethrow the error instead of returning an error object
+      })
     );
   }
 }
