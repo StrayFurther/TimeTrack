@@ -1,6 +1,7 @@
 package strayfurther.backend.config;
 
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
@@ -38,6 +39,8 @@ public class SecurityConfig {
     private final RequestOriginValidationFilter requestOriginValidationFilter;
     private final CorsPreflightFilter corsPreflightFilter;
     private final Environment environment;
+    @Value("${spring.profiles.active:default}")
+    private String activeProfile;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
                           AuthenticationProvider jwtAuthenticationProvider,
@@ -59,7 +62,8 @@ public class SecurityConfig {
     @Bean
     @Profile({"dev", "test"})
     public SecurityFilterChain devSecurityFilterChain(HttpSecurity http) throws Exception {
-        System.out.println("RUNNING IN DEV OR TEST PROFILE");
+        System.out.println("RUNNING IN DEV OR TEST PROFILE: " + activeProfile);
+        System.out.println("Active Profile: " + environment.getActiveProfiles()[0]);
         // Disable CSRF protection for development
         http.cors().and().csrf(csrf -> csrf.disable());
 
@@ -86,8 +90,15 @@ public class SecurityConfig {
         http.csrf(csrf -> csrf.disable());
 
         http.authorizeHttpRequests(auth -> {
-            PermittedEndpoints.POST_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(HttpMethod.POST, endpoint).permitAll());
-            PermittedEndpoints.GET_ENDPOINTS.forEach(endpoint -> auth.requestMatchers(HttpMethod.GET, endpoint).permitAll());
+            PermittedEndpoints.POST_ENDPOINTS.forEach(endpoint -> {
+                System.out.println("POST_ENDPOINT: " + endpoint);
+                auth.requestMatchers(HttpMethod.POST, endpoint).permitAll();
+
+            });
+            PermittedEndpoints.GET_ENDPOINTS.forEach(endpoint -> {
+                System.out.println("GET_ENDPOINT: " + endpoint);
+                auth.requestMatchers(HttpMethod.GET, endpoint).permitAll();
+            });
             auth.anyRequest().authenticated();
         });
 

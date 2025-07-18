@@ -10,7 +10,7 @@ public class PermittedEndpoints {
             "/user/login"
     );
     public static final List<String> GET_ENDPOINTS = List.of(
-            "/api/user/exists/**",
-            "/user/exists/**"
+            "/api/user/exists",
+            "/user/exists"
     );
 }

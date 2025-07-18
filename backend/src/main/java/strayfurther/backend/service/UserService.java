@@ -56,6 +56,7 @@ public class UserService {
     }
 
     public boolean emailExists(String email) {
+        System.out.println("Checking if email exists in service: " + email);
         return userRepository.existsByEmail(email.toLowerCase(Locale.ROOT));
     }
 

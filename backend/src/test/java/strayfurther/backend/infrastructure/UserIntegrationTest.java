@@ -5,14 +5,27 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.UUID;
 import strayfurther.backend.repository.UserRepository;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,11 +36,43 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 public class UserIntegrationTest {
 
+    @Value("${app.client.source.secret}")
+    private String secret;
+
     @Autowired
     private MockMvc mockMvc;
 
     @Autowired
     private UserRepository userRepository;
+
+    private String generateHmacSHA256Signature(String data) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] hmacBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hmacBytes) {
+                hexString.append(String.format("%02x", b));
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate HMAC SHA256 signature", e);
+        }
+    }
+
+    private HttpHeaders generateHeaders() {
+        String nonce = System.currentTimeMillis() + "-" + UUID.randomUUID();
+        String timestamp = Instant.now().toString();
+        String signature = generateHmacSHA256Signature(nonce + ":" + timestamp);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Client-Nonce", nonce);
+        headers.add("X-Client-Timestamp", timestamp);
+        headers.add("X-Client-Signature", signature);
+        headers.add("User-Agent", "IntegrationTestAgent/1.0");
+        return headers;
+    }
 
     String authenticateTestUser() throws Exception {
         // Register and login to get a token
@@ -41,7 +86,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerRequest))
+                        .content(registerRequest)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
             String loginRequest = """
@@ -54,7 +100,7 @@ public class UserIntegrationTest {
         String jsonResponse = mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -82,7 +128,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
         assertTrue(userRepository.existsByEmail("test@example.com"));
@@ -100,7 +147,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
         requestBody = """
@@ -113,7 +161,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isConflict());
     }
 
@@ -129,7 +178,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isBadRequest());
     }
 
@@ -145,7 +195,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isBadRequest());
     }
 
@@ -163,7 +214,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
 
@@ -177,7 +229,7 @@ public class UserIntegrationTest {
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
@@ -193,7 +245,7 @@ public class UserIntegrationTest {
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid credentials"));
     }
@@ -211,7 +263,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
 
@@ -224,7 +277,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isBadRequest());
     }
 
@@ -241,7 +295,8 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(registerRequest))
+                        .content(registerRequest)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
         // Login with lowercase email
@@ -255,7 +310,7 @@ public class UserIntegrationTest {
         mockMvc.perform(post("/user/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginRequest)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists());
     }
@@ -273,18 +328,21 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get("/user/exists")
-                        .param("email", "exists@example.com"))
+                        .param("email", "exists@example.com")
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("true"));
     }
 
     @Test
     void shouldReturnFalseIfEmailDoesNotExist() throws Exception {
-        mockMvc.perform(get("/user/exists").param("email", "notfound@example.com"))
+        mockMvc.perform(get("/user/exists").param("email", "notfound@example.com")
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("false"));
     }
@@ -302,13 +360,15 @@ public class UserIntegrationTest {
 
         mockMvc.perform(post("/user/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
+                        .content(requestBody)
+                        .headers(generateHeaders()))
                 .andExpect(status().isCreated());
 
         // Check existence with lowercase email (URL-encoded)
 
         mockMvc.perform(get("/user/exists")
-                        .param("email", "casesensitive@example.com"))
+                        .param("email", "casesensitive@example.com")
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(content().string("true"));
     }
@@ -327,7 +387,7 @@ public class UserIntegrationTest {
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.filePath").exists());
     }
@@ -347,7 +407,7 @@ public class UserIntegrationTest {
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("File too large"));
     }
@@ -366,7 +426,7 @@ public class UserIntegrationTest {
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("Invalid file type"));
     }
@@ -381,7 +441,9 @@ public class UserIntegrationTest {
         );
 
         mockMvc.perform(multipart("/user/profile-pic")
-                        .file(file))
+                        .file(file)
+                        .headers(generateHeaders())
+                )
                 .andExpect(status().isForbidden()); // Expect 403 for missing token
     }
 
@@ -400,13 +462,13 @@ public class UserIntegrationTest {
         mockMvc.perform(multipart("/user/profile-pic")
                         .file(file)
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.filePath").exists());
 
         mockMvc.perform(get("/user/profile-pic")
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.IMAGE_JPEG));
     }
@@ -417,7 +479,7 @@ public class UserIntegrationTest {
 
         mockMvc.perform(get("/user/profile-pic")
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Profile picture not found"));
     }
@@ -428,20 +490,23 @@ public class UserIntegrationTest {
         String invalidToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalidPayload.invalidSignature";
 
         mockMvc.perform(get("/user/profile-pic")
-                        .header("Authorization", "Bearer " + invalidToken))
+                        .header("Authorization", "Bearer " + invalidToken)
+                        .headers(generateHeaders()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void shouldFailToGetProfilePicWithInvalidToken() throws Exception {
         mockMvc.perform(get("/user/profile-pic")
-                        .header("Authorization", "Bearer invalidToken"))
+                        .header("Authorization", "Bearer invalidToken")
+                        .headers(generateHeaders()))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void shouldFailToGetProfilePicWithoutToken() throws Exception {
-        mockMvc.perform(get("/user/profile-pic"))
+        mockMvc.perform(get("/user/profile-pic")
+                        .headers(generateHeaders()))
                 .andExpect(status().isForbidden()); // Expect 403 for missing token
     }
 
@@ -457,7 +522,7 @@ public class UserIntegrationTest {
 
         mockMvc.perform(get("/user/profile-pic")
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Profile picture not found"));
     }
@@ -468,7 +533,7 @@ public class UserIntegrationTest {
 
         MvcResult result = mockMvc.perform(get("/user/details")
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userName").value("testUser"))
                 .andExpect(jsonPath("$.email").value("test@example.com"))
@@ -485,7 +550,7 @@ public class UserIntegrationTest {
 
         mockMvc.perform(get("/user/details")
                         .header("Authorization", "Bearer " + token)
-                        .header("User-Agent", "IntegrationTestAgent/1.0"))
+                        .headers(generateHeaders()))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("User not found: User not found or invalid token: User not found with email: test@example.com"));
     }
