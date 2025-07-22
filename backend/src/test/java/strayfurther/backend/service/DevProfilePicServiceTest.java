@@ -1,10 +1,7 @@
 package strayfurther.backend.service;
 
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
@@ -13,7 +10,6 @@ import strayfurther.backend.exception.FileStorageException;
 
 import java.io.File;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.util.Comparator;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -22,28 +18,45 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import strayfurther.backend.util.DirectoryInitializer;
+
 @ActiveProfiles("dev")
-@SpringBootTest
+@SpringBootTest(properties = {
+        "profile.pics.location=/tmp/test-profile-pics",
+}, classes = {strayfurther.backend.BackendApplication.class})
 class DevProfilePicServiceTest {
+
+    private static final String TEST_PROFILE_PICS_LOCATION = "/tmp/test-profile-pics";
 
     private DevProfilePicService devProfilePicService;
     private Path testDirectory;
 
     public DevProfilePicServiceTest() throws IOException {
         // Clean up the test directory before each test
+        (new DirectoryInitializer(TEST_PROFILE_PICS_LOCATION)).initializeDirectory();
         testDirectory = Paths.get("/tmp/test-profile-pics");
         Files.createDirectories(testDirectory); // Ensure the directory exists
         Files.setPosixFilePermissions(testDirectory, PosixFilePermissions.fromString("rwxrwxrwx"));
-        System.out.println("Test directory: " + testDirectory.toAbsolutePath().normalize().toString());
         devProfilePicService = new DevProfilePicService(testDirectory.toAbsolutePath().normalize().toString());
         testDirectory = devProfilePicService.getBasePath();
     }
 
+    public static boolean deleteDirectory(File directory) {
+        if (directory.isDirectory()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    deleteDirectory(file); // Recursively delete contents
+                }
+            }
+        }
+        return directory.delete(); // Delete the empty directory or file
+    }
+
+    @AfterEach
     void tearDown() throws IOException {
-        if (Files.exists(testDirectory)) {
-            System.out.println("Deleting test directory: " + testDirectory.toAbsolutePath().normalize().toString());
-            testDirectory.toFile().delete();
-            testDirectory.getParent().toFile().delete();
+        if (Files.exists(devProfilePicService.getBasePath())) {
+            deleteDirectory(devProfilePicService.getBasePath().toFile());
         }
     }
 
@@ -71,13 +84,9 @@ class DevProfilePicServiceTest {
                 "image/jpeg",
                 "test content".getBytes()
         );
-        System.out.println("Test directory: " + testDirectory.toAbsolutePath());
-        System.out.println("Service base path: " + devProfilePicService.getBasePath());
         String fileName = devProfilePicService.saveProfilePic(file);
 
         Path savedFilePath = testDirectory.resolve(fileName).normalize();
-        System.out.println("Saved file: " + savedFilePath.toAbsolutePath().normalize().toString());
-        System.out.println("Saved file path: " + Paths.get("" + devProfilePicService.getBasePath().resolve(fileName).toAbsolutePath()));
         assertTrue(Files.exists(Paths.get("" + devProfilePicService.getBasePath().resolve(fileName).toAbsolutePath())), "File should exist after saving");
         assertEquals("test content", Files.readString(savedFilePath), "File content should match");
     }
@@ -100,7 +109,6 @@ class DevProfilePicServiceTest {
             if (matchingFile == null) {
                 fail("File should have been saved but was not found");
             }
-            System.out.println("Saved file: " + matchingFile.toAbsolutePath() + " at " + fileName);
             assertTrue(matchingFile.toString().contains(fileName), "File should exist after saving");
             Path basePath = devProfilePicService.getBasePath();
             Files.setPosixFilePermissions(basePath, PosixFilePermissions.fromString("rwxrwxrwx"));
@@ -110,7 +118,6 @@ class DevProfilePicServiceTest {
             assertEquals(new String(file.getBytes()), fileContent, "File content should match the uploaded content");
         } catch (IOException e) {
 
-            System.out.println("Error reading file: " + e);
             fail("Error reading file: " + e);
         }
     }
@@ -144,7 +151,6 @@ class DevProfilePicServiceTest {
         String fileName = UUID.randomUUID() + ".jpg";
         Path filePath = Files.createFile(Paths.get(testDirectory.toAbsolutePath().normalize().toString() + "/" + fileName));
         Files.writeString(filePath, "test content");
-        System.out.println("File created at: " + filePath.toAbsolutePath());
 
         Resource resource = devProfilePicService.loadFileAsResource(fileName);
 
@@ -167,7 +173,6 @@ class DevProfilePicServiceTest {
         Exception exception = assertThrows(FileStorageException.class, () -> {
             devProfilePicService.loadFileAsResource("nonexistent-file.jpg");
         });
-        System.out.println(exception.getMessage());
         assertTrue(exception.getMessage().contains("File not found"), "Exception message should indicate file not found");
     }
 
@@ -192,9 +197,9 @@ class DevProfilePicServiceTest {
             if (matchingFile == null) {
                 fail("File should have been saved but was not found");
             }
-            System.out.println("Saved file: " + matchingFile.toAbsolutePath() + " at " + fileName);
             assertTrue(matchingFile.toString().contains(fileName), "File should exist after saving");
             boolean result = devProfilePicService.deletePic(fileName);
+            assertTrue(result, "Did delete");
             try (Stream<Path> paths2 = Files.list(devProfilePicService.getBasePath())) {
                 Path matchingFile2 = paths2
                         .filter(path -> path.getFileName().toString().equals(fileName))
@@ -205,12 +210,9 @@ class DevProfilePicServiceTest {
                 }
                 assertNull(matchingFile2, "File should not exist after deleting");
             } catch (IOException e) {
-                System.out.println("Error deleting file: " + e);
                 fail("Error deleting file: " + e);
             }
         } catch (IOException e) {
-
-            System.out.println("Error reading file: " + e);
             fail("Error reading file: " + e);
         }
     }
@@ -265,7 +267,6 @@ class DevProfilePicServiceTest {
 
         // Set restrictive permissions on the directory
         Files.setPosixFilePermissions(testDirectory, PosixFilePermissions.fromString("r--r--r--"));
-        System.out.println("File saved: " + savedFile);
         Exception exception = assertThrows(FileStorageException.class, () -> {
             devProfilePicService.deletePic(savedFile);
         });
@@ -276,14 +277,8 @@ class DevProfilePicServiceTest {
 
     @Test
     void testDeleteNonExistentFile() throws IOException {
-        try {
             boolean result = devProfilePicService.deletePic("nonexistent-file.jpg");
             assertFalse(result, "Method should return false for non-existent file");
-        }  catch (FileStorageException e) {
-            // If the file does not exist, we expect an exception to be thrown
-        } finally {
-            tearDown();
-        }
     }
 
 }
