@@ -10,7 +10,12 @@ import strayfurther.backend.exception.FileStorageException;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.springframework.core.io.Resource;
 
 @Profile("dev")
@@ -19,9 +24,20 @@ public class DevProfilePicService implements ProfilePicService {
 
     private final Path directory;
 
-    public DevProfilePicService(@Value("${profile.pics.location:uploads/profile-pics}") String uploadLocation) {
+    private final Set<PosixFilePermission> initalPermissions;
+
+    public DevProfilePicService(@Value("${profile.pics.location:uploads/profile-pics}") String uploadLocation) throws IOException {
         Path rootLocation = Paths.get(System.getProperty("user.dir"));
         this.directory = Paths.get(rootLocation.toAbsolutePath() + "/" + uploadLocation);
+        initalPermissions = Files.getPosixFilePermissions(directory);
+    }
+
+    public void changePermissions(Set<PosixFilePermission> permissions) {
+        try {
+            Files.setPosixFilePermissions(directory, permissions);
+        } catch (IOException e) {
+            throw new FileStorageException("Failed to change permissions for directory: " + directory, e);
+        }
     }
 
     @Override
@@ -35,16 +51,34 @@ public class DevProfilePicService implements ProfilePicService {
             throw new FileStorageException("Empty files are not allowed.");
         }
         try {
+            if (!Files.exists(directory)) {
+                Files.createDirectories(directory);
+            }
+            if (!Files.isWritable(directory)) {
+                changePermissions(PosixFilePermissions.fromString("rwxrwxrwx"));
+            }
+
             String fileName = UUID.randomUUID() + "." + FilenameUtils.getExtension(file.getOriginalFilename());
             Path filePath = directory.resolve(fileName);
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            if (!Files.getPosixFilePermissions(directory).equals(initalPermissions)) {
+                Files.setPosixFilePermissions(filePath, initalPermissions);
+            }
             return fileName;
         } catch (IOException e) {
             throw new FileStorageException("Error saving file:", e);
         } catch (SecurityException e) {
             throw new FileStorageException("Permission denied:", e);
+        } catch (FileStorageException e) {
+            throw new FileStorageException("Earlier Error:", e);
         } catch (Exception e) {
             throw new FileStorageException("Failed to save file due to an unexpected error.", e);
+        } finally {
+            try {
+                Files.setPosixFilePermissions(directory, initalPermissions);
+            } catch (IOException e) {
+                throw new FileStorageException("Failed to reset permissions for directory: " + directory, e);
+            }
         }
     }
 
@@ -82,5 +116,9 @@ public class DevProfilePicService implements ProfilePicService {
         } catch (Exception e) {
             throw new FileStorageException("Unexpected error occurred while deleting file: " + fileName, e);
         }
+    }
+
+    public Path getBasePath() {
+        return directory;
     }
 }
