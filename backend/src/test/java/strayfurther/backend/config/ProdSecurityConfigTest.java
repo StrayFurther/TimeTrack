@@ -11,6 +11,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
 import strayfurther.backend.repository.UserRepository;
+import strayfurther.backend.util.TestUtil;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -40,6 +41,9 @@ class ProdSecurityConfigTest {
 
     @Autowired
     private SecurityConfig securityConfig;
+
+    @Autowired
+    private TestUtil testUtil;
 
     @BeforeEach
     void setUp() {
@@ -71,6 +75,7 @@ class ProdSecurityConfigTest {
                             "password": "Password123!"
                         }
                         """)
+                        .headers(testUtil.generateHeaders())
                         .secure(false))
                 .andExpect(status().isForbidden());
     }
@@ -86,6 +91,7 @@ class ProdSecurityConfigTest {
                             "password": "Password123!"
                         }
                         """)
+                        .headers(testUtil.generateHeaders())
                         .secure(true))
                 .andExpect(status().isCreated());
     }

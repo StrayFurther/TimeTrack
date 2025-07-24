@@ -89,6 +89,17 @@ public class SecurityConfig {
         // Disable CSRF protection. Using JWT for authentication, CSRF protection is not needed.
         http.csrf(csrf -> csrf.disable());
 
+        // Block HTTP requests explicitly
+        http.addFilterBefore((request, response, chain) -> {
+            if (!request.isSecure()) {
+                if (response instanceof HttpServletResponse) {
+                    ((HttpServletResponse) response).sendError(HttpServletResponse.SC_FORBIDDEN, "HTTP requests are not allowed");
+                }
+            } else {
+                chain.doFilter(request, response);
+            }
+        }, UsernamePasswordAuthenticationFilter.class);
+
         http.authorizeHttpRequests(auth -> {
             PermittedEndpoints.POST_ENDPOINTS.forEach(endpoint -> {
                 System.out.println("POST_ENDPOINT: " + endpoint);
@@ -106,17 +117,6 @@ public class SecurityConfig {
         http.addFilterBefore(corsPreflightFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(requestOriginValidationFilter, UsernamePasswordAuthenticationFilter.class);
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
-        // Custom filter to block HTTP requests
-        http.addFilterBefore((request, response, chain) -> {
-            if (!request.isSecure()) {
-                if (response instanceof HttpServletResponse) {
-                    ((HttpServletResponse) response).sendError(HttpServletResponse.SC_FORBIDDEN, "HTTP requests are not allowed");
-                }
-            } else {
-                chain.doFilter(request, response);
-            }
-        }, ForwardedHeaderFilter.class);
 
         return http.build();
     }
