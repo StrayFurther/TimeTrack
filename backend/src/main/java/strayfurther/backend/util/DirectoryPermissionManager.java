@@ -11,7 +11,6 @@ public class DirectoryPermissionManager {
 
     public static void writeWithPermissionChange(Path directory, Runnable writeOperation) throws IOException {
         // Save current permissions
-        System.out.println("Current permissions for directory: " + directory.toAbsolutePath());
         Set<PosixFilePermission> originalPermissions = Files.getPosixFilePermissions(directory.toAbsolutePath());
 
         try {

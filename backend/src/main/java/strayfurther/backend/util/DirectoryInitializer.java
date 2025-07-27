@@ -8,8 +8,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.attribute.UserPrincipal;
-import java.util.Arrays;
 
 @Component
 public class DirectoryInitializer {
@@ -20,27 +18,15 @@ public class DirectoryInitializer {
     public DirectoryInitializer(@Value("${profile.pics.location}") String desiredUploadDirectory) {
         this.rootLocation = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
         this.uploadDirectory = Paths.get(System.getProperty("user.dir") + "/" + desiredUploadDirectory).toAbsolutePath().normalize();
-        System.out.println("Directory initialized: " + rootLocation);
-        System.out.println("Upload directory: " + uploadDirectory);
-    }
-
-    private Path getParentDirectory(Path path) {
-        Path parent = path.toAbsolutePath();
-        while (parent != null && !parent.equals(rootLocation)) {
-            parent = parent.getParent();
-        }
-        return parent != null ? parent : rootLocation;
     }
 
     @PostConstruct
     public void initializeDirectory() {
         try {
-            DirectoryPermissionManager.writeWithPermissionChange(rootLocation, () -> {;
+            DirectoryPermissionManager.writeWithPermissionChange(rootLocation, () -> {
                 if (!Files.exists(uploadDirectory)) {
                     try {
                         Files.createDirectories(uploadDirectory);
-                        UserPrincipal owner = Files.getOwner(uploadDirectory);
-                        System.out.println("Directory owner: " + owner.getName());
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
