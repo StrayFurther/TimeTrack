@@ -9,6 +9,7 @@ public interface ProfilePicService {
     String saveProfilePic(MultipartFile file) throws FileStorageException;
     Resource loadFileAsResource(String filePath) throws FileStorageException;
     boolean deletePic(String fileName) throws FileStorageException;
+    boolean isFileSaved(String fileName) throws FileStorageException;
 }
 
 

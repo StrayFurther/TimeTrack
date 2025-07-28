@@ -3,13 +3,16 @@ import { UserService } from '../../../services/user/user.service';
 import {LoadingSpinnerService} from '../../../services/loading-spinner/loading-spinner.service';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {getRoleEnumValues, stringToEnum} from '../../../models/user';
-import { UserDetailResponse } from '../../../models/user-detail-response';
+import {CompleteUserDetailResponse, UserDetailResponse} from '../../../models/user-detail-response';
 import {CommonModule} from '@angular/common';
 import {MatError, MatFormField, MatLabel} from '@angular/material/form-field';
 import {MatSelect} from '@angular/material/select';
 import {MatOption} from '@angular/material/core';
 import {MatButton} from '@angular/material/button';
 import {MatInput} from '@angular/material/input';
+import {forkJoin} from 'rxjs';
+import { environment } from '../../../../env/env';
+
 
 @Component({
   selector: 'app-user-detail',
@@ -29,10 +32,11 @@ export class UserDetailComponent implements OnInit {
     role: new FormControl('', Validators.required),
     profilePic: new FormControl(''),
   });
-
+  isEditModeActive = signal(false);
+  profilePicUrl: string = environment.defaultProfilePic;
 
   async ngOnInit() {
-    await this.fetchUserDetails();
+    await this.loadUserData();
   }
 
   mapUserDetails(resp: UserDetailResponse) {
@@ -54,20 +58,29 @@ export class UserDetailComponent implements OnInit {
     this.loadingSpinnerService.message = '';
   }
 
-  async fetchUserDetails() {
+  async loadUserData() {
     this.showSpinner();
     this.showErrorMessage.set(false)
-    this.userService.fetchActiveUser().subscribe({
-      next: (resp) => {
-        this.mapUserDetails(resp);
+    forkJoin({
+      userDetails: this.userService.fetchActiveUser(),
+      profilePic: this.userService.getOwnProfilePic(),
+    }).subscribe({
+      next: (results: CompleteUserDetailResponse) => {
+        console.log(results.profilePic);
+        this.mapUserDetails(results.userDetails);
+        this.profilePicUrl = URL.createObjectURL(results.profilePic) || environment.defaultProfilePic;
         this.hideSpinner();
       },
-      error: (error) => {
-        console.error('Error fetching user details:', error);
+      error: (err: any) => {
+        console.error('Error loading data:', err);
         this.showErrorMessage.set(true);
         this.hideSpinner();
-      }
+      },
     });
+  }
+
+  toggleEditMode() {
+    this.isEditModeActive.set(!this.isEditModeActive());
   }
 
   onSubmit() {

@@ -73,4 +73,13 @@ export class UserService {
       })
     );
   }
+
+  getOwnProfilePic() {
+    return this.httpClient.get(`${this.apiUrl}/user/profile-pic`, {
+      responseType: 'blob', // Expect a binary file (image)
+      headers: {
+        Authorization: `Bearer ${this.jwtToken}`, // Replace with your token logic
+      },
+    });
+  }
 }

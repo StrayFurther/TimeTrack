@@ -5,3 +5,7 @@ export type UserDetailResponse = {
   profilePic?: string | null;
 };
 
+export type CompleteUserDetailResponse = {
+  userDetails: UserDetailResponse;
+  profilePic: Blob;
+}

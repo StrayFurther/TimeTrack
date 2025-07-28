@@ -14,6 +14,8 @@ import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 import strayfurther.backend.util.JwtUtil;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -23,12 +25,14 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final ProfilePicService fileService;
+    private final ProfilePicService profilePicService;
 
-    public UserService(UserRepository userRepository, JwtUtil jwtUtil, ProfilePicService fileService) {
+    public UserService(UserRepository userRepository, JwtUtil jwtUtil, ProfilePicService fileService, ProfilePicService profilePicService) {
         this.userRepository = userRepository;
         this.passwordEncoder = new BCryptPasswordEncoder();
         this.jwtUtil = jwtUtil;
         this.fileService = fileService;
+        this.profilePicService = profilePicService;
     }
 
     public void registerUser(UserRequestDTO userRequest) {
@@ -82,8 +86,14 @@ public class UserService {
 
         if (user.getProfilePic() != null) {
             String oldFileName = user.getProfilePic();
-            if (!fileService.deletePic(oldFileName)) {
-                throw new FileStorageException("Failed to delete old profile picture: " + oldFileName);
+            try {
+                if (profilePicService.isFileSaved(oldFileName)) {
+                    if (!fileService.deletePic(oldFileName)) {
+                        throw new FileStorageException("Failed to delete old profile picture: " + oldFileName);
+                    }
+                }
+            } catch (FileStorageException e) {
+                throw new FileStorageException("Failed to delete old profile picture: " + oldFileName, e);
             }
         }
 

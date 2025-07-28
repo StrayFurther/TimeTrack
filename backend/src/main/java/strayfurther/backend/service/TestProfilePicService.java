@@ -56,4 +56,9 @@ public class TestProfilePicService implements ProfilePicService {
             return false;
         }
     }
+
+    @Override
+    public boolean isFileSaved(String fileName) {
+        return inMemoryStorage.containsKey(fileName);
+    }
 }

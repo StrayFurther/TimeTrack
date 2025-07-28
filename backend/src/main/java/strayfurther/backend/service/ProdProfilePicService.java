@@ -62,4 +62,11 @@ public class ProdProfilePicService implements ProfilePicService {
             throw new FileStorageException("Failed to delete file from S3: " + fileName, e);
         }
     }
+
+    @Override
+    public boolean isFileSaved(String fileName) {
+        String filePath = getProfilePicPath(fileName);
+        return s3Client.doesObjectExist(bucketName, filePath);
+    }
+
 }

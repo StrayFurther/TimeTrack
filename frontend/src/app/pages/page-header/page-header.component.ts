@@ -19,7 +19,7 @@ export class PageHeaderComponent {
     }
 
     goToProfile() {
-      this.router.navigate(['/profile']);
+      this.router.navigate(['/user']);
     }
 
     goToLogin() {

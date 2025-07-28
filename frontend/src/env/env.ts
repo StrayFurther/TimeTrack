@@ -1,6 +1,7 @@
 export const environment = {
-  produczion: false,
+  production: false,
   apiUrl: '',
   jwtTokenName: 'tt_u',
-  clientSecret: ""
+  clientSecret: "",
+  defaultProfilePic: 'assets/NoProfilePic.png',
 };

@@ -63,6 +63,7 @@ public class RateLimitFilter implements Filter {
 
         // Only apply rate limiting to certain endpoints
         if (!isRateLimitedPath(path)) {
+            System.out.println("Skipping rate limiting for path: " + path);
             chain.doFilter(request, response);
             return;
         }
@@ -73,6 +74,7 @@ public class RateLimitFilter implements Filter {
         if (bucket.tryConsume(1)) {
             chain.doFilter(request, response);
         } else {
+            System.out.println("too many requests from IP: " + ip + " for path: " + path);
             ((HttpServletResponse) response).setStatus(429);
             response.getWriter().write("Too Many Requests");
         }

@@ -17,6 +17,8 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import org.springframework.core.io.Resource;
+import strayfurther.backend.util.DirectoryInitializer;
+import strayfurther.backend.util.DirectoryPermissionManager;
 
 @Profile("dev")
 @Service
@@ -84,15 +86,17 @@ public class DevProfilePicService implements ProfilePicService {
 
     @Override
     public Resource loadFileAsResource(String fileName) throws FileStorageException {
+        System.out.println("Loading file: " + fileName);
         try {
-            Path path = directory.resolve(Paths.get(fileName)).normalize();
-            if (!path.startsWith(directory)) {
+            if (fileName == null || fileName.isEmpty()) {
                 throw new FileStorageException("Invalid file path: " + fileName);
             }
-            if (Files.exists(path)) {
-                return new PathResource(path);
+            if (isFileSaved(fileName)) {
+                System.out.println("File exists: " + fileName);
+                return new PathResource(directory.resolve(Paths.get(fileName)).normalize());
             } else {
-                throw new FileStorageException("File not found: " + fileName);
+                System.out.println("File does not exist: " + fileName);
+                throw new FileStorageException("File does not exist: " + fileName);
             }
         } catch (FileStorageException e) {
             throw e; // Preserve specific error messages
@@ -106,9 +110,20 @@ public class DevProfilePicService implements ProfilePicService {
         if (fileName == null || fileName.isEmpty()) {
             throw new FileStorageException("File name cannot be null or empty");
         }
+        if (!isFileSaved(fileName)) {
+            throw new FileStorageException("File does not exist: " + fileName);
+        }
         // catching not empty directory would be never happen since we are only deleting files
         try {
-            return Files.deleteIfExists(Paths.get(getProfilePicPath(fileName)));
+            Path fileToDelete = Paths.get(getProfilePicPath(fileName));
+            DirectoryPermissionManager.writeWithPermissionChange(directory, () -> {
+               try {
+                   Files.deleteIfExists(fileToDelete);
+               } catch (Exception e) {
+                   throw new FileStorageException("Failed to delete file: " + fileName, e);
+               }
+            });
+            return !isFileSaved(fileName);
         } catch (IOException e) {
             throw new FileStorageException("I/O error occurred while deleting file: " + fileName, e);
         } catch (SecurityException e) {
@@ -120,5 +135,17 @@ public class DevProfilePicService implements ProfilePicService {
 
     public Path getBasePath() {
         return directory;
+    }
+
+    @Override
+    public boolean isFileSaved(String fileName) throws FileStorageException {
+        if (fileName == null || fileName.isEmpty()) {
+            throw new FileStorageException("File name cannot be null or empty");
+        }
+        try (Stream<Path> files = Files.list(directory)) {
+            return files.anyMatch(path -> path.getFileName().toString().equals(fileName));
+        } catch (IOException e) {
+            throw new FileStorageException("Error checking if file is saved: " + fileName, e);
+        }
     }
 }
