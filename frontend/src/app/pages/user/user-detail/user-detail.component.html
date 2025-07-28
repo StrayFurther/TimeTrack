@@ -1,6 +1,6 @@
 <div class="profile-detail">
   <h1>User Profile</h1>
-  <img [src]="profilePicUrl" alt="Profile Picture" class="profile-pic" />
+  <img class='profile-pic' [src]="profilePicUrl" alt="Profile Picture" class="profile-pic" />
   @if (!showErrorMessage() && isEditModeActive()) {
     <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
       <mat-form-field appearance="fill" class="form-group">

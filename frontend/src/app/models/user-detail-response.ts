@@ -7,5 +7,5 @@ export type UserDetailResponse = {
 
 export type CompleteUserDetailResponse = {
   userDetails: UserDetailResponse;
-  profilePic: Blob;
+  profilePic: Blob | null;
 }

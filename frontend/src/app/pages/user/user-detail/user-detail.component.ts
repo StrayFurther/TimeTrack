@@ -10,7 +10,7 @@ import {MatSelect} from '@angular/material/select';
 import {MatOption} from '@angular/material/core';
 import {MatButton} from '@angular/material/button';
 import {MatInput} from '@angular/material/input';
-import {forkJoin} from 'rxjs';
+import {catchError, forkJoin, of} from 'rxjs';
 import { environment } from '../../../../env/env';
 
 
@@ -63,12 +63,17 @@ export class UserDetailComponent implements OnInit {
     this.showErrorMessage.set(false)
     forkJoin({
       userDetails: this.userService.fetchActiveUser(),
-      profilePic: this.userService.getOwnProfilePic(),
+      profilePic: this.userService.getOwnProfilePic().pipe(
+        catchError((err: any, _) => {
+          console.error('Error fetching profile picture:', err);
+          return of(null); // Return null or a default value if `getOwnProfilePic` fails
+        })
+      ),
     }).subscribe({
       next: (results: CompleteUserDetailResponse) => {
         console.log(results.profilePic);
         this.mapUserDetails(results.userDetails);
-        this.profilePicUrl = URL.createObjectURL(results.profilePic) || environment.defaultProfilePic;
+        this.profilePicUrl = results.profilePic ? URL.createObjectURL(results.profilePic) : environment.defaultProfilePic;
         this.hideSpinner();
       },
       error: (err: any) => {
