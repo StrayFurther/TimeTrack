@@ -12,6 +12,8 @@ import {MatButton} from '@angular/material/button';
 import {MatInput} from '@angular/material/input';
 import {catchError, forkJoin, of} from 'rxjs';
 import { environment } from '../../../../env/env';
+import {mapToRegularUserUpdatePayload} from '../../../models/user-update-request';
+import {toSignal} from '@angular/core/rxjs-interop';
 
 
 @Component({
@@ -26,11 +28,11 @@ export class UserDetailComponent implements OnInit {
   userService = inject(UserService);
   loadingSpinnerService = inject(LoadingSpinnerService);
   showErrorMessage = signal(false);
+  errorMessage = signal('An error occurred while loading user data. Please try again later.');
   userForm = new FormGroup({
     userName: new FormControl('', Validators.required),
     email: new FormControl('', [Validators.required, Validators.email]),
-    role: new FormControl('', Validators.required),
-    profilePic: new FormControl(''),
+    role: new FormControl({ value: '', disabled: true }, Validators.required),
   });
   isEditModeActive = signal(false);
   profilePicUrl: string = environment.defaultProfilePic;
@@ -43,23 +45,17 @@ export class UserDetailComponent implements OnInit {
     this.userForm = new FormGroup({
       userName: new FormControl(resp.userName, Validators.required),
       email: new FormControl(resp.email, [Validators.required, Validators.email]),
-      role: new FormControl(stringToEnum(resp.role)?.toString() || '', Validators.required), // Map role string to Role enum
-      profilePic: new FormControl(resp.profilePic || ''),
+      role: new FormControl({ value: stringToEnum(resp.role)?.toString() || '', disabled: true }, Validators.required), // Map role string to Role enum
     });
   }
 
-  showSpinner() {
+  showSpinner(message: string) {
     this.loadingSpinnerService.showSpinner = true;
-    this.loadingSpinnerService.message = 'Loading user details...';
-  }
-
-  hideSpinner() {
-    this.loadingSpinnerService.showSpinner = false;
-    this.loadingSpinnerService.message = '';
+    this.loadingSpinnerService.message = message;
   }
 
   async loadUserData() {
-    this.showSpinner();
+    this.showSpinner("Loading user data...");
     this.showErrorMessage.set(false)
     forkJoin({
       userDetails: this.userService.fetchActiveUser(),
@@ -74,12 +70,13 @@ export class UserDetailComponent implements OnInit {
         console.log(results.profilePic);
         this.mapUserDetails(results.userDetails);
         this.profilePicUrl = results.profilePic ? URL.createObjectURL(results.profilePic) : environment.defaultProfilePic;
-        this.hideSpinner();
+        this.loadingSpinnerService.clearSpinner();
       },
       error: (err: any) => {
         console.error('Error loading data:', err);
         this.showErrorMessage.set(true);
-        this.hideSpinner();
+        this.errorMessage.set('Failed to load user data. Please try again later.');
+        this.loadingSpinnerService.clearSpinner();
       },
     });
   }
@@ -89,6 +86,21 @@ export class UserDetailComponent implements OnInit {
   }
 
   onSubmit() {
-
+    if (this.userForm.valid) {
+      this.showSpinner("Updating user details...");
+      this.userService.updateUserDetails(mapToRegularUserUpdatePayload(this.userForm.value)).subscribe((results: UserDetailResponse) => {
+          console.log('User details updated successfully:', results);
+          this.mapUserDetails(results);
+          this.isEditModeActive.set(false);
+          this.loadingSpinnerService.clearSpinner();
+        },
+        (err: any) => {
+          console.error('Error updating user details:', err);
+          this.showErrorMessage.set(true);
+          this.errorMessage.set('Failed to update user details. Please try again.');
+          this.loadingSpinnerService.clearSpinner();
+        }
+      );
+    }
   }
 }

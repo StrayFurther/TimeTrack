@@ -57,7 +57,7 @@ public class RequestOriginValidationFilter extends OncePerRequestFilter {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid request");
                 return;
             }
-
+            System.out.println("RequestOriginValidationFilter.doFilterInternal called");
             filterChain.doFilter(request, response);
         } catch (Exception e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid header format");

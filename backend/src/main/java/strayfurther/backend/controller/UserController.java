@@ -5,12 +5,17 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import strayfurther.backend.dto.LoginRequestDTO;
+import strayfurther.backend.dto.UpdateUserDTO;
+import strayfurther.backend.dto.AdminsUpdateUserDTO;
 import strayfurther.backend.exception.FileStorageException;
 import strayfurther.backend.exception.JwtUtilException;
+import strayfurther.backend.exception.UpdateUserException;
 import strayfurther.backend.exception.UserNotFoundException;
 import strayfurther.backend.service.UserService;
+import strayfurther.backend.model.User;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -32,7 +37,6 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody UserRequestDTO userRequest) {
-        System.out.println("Registering user: " + userRequest.getEmail());
         userService.registerUser(userRequest);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
@@ -105,13 +109,50 @@ public class UserController {
     public ResponseEntity<?> getUser(@RequestHeader("Authorization") String authHeader) {
         try {
             String token = jwtUtil.extractTokenFromHeader(authHeader);
-            return ResponseEntity.ok(userService.getUserFromToken(token));
+            return ResponseEntity.ok(userService.getUserDetailsFromToken(token));
         } catch (JwtUtilException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Token Problem: " + e.getMessage());
         } catch (UserNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("User not found: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid or expired token");
+        }
+    }
+
+    @PutMapping("/details")
+    public ResponseEntity<?> updateOwnUser(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdateUserDTO updatedUser) {
+        try {
+            String token = jwtUtil.extractTokenFromHeader(authHeader);
+            return ResponseEntity.ok(userService.updateUserDetails(token, updatedUser));
+        } catch (JwtUtilException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Token Problem: " + e.getMessage());
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User not found: " + e.getMessage());
+        } catch (UpdateUserException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Update user failed: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid or expired token");
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/details/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @Valid @RequestBody AdminsUpdateUserDTO updatedUser) {
+        try {
+            return ResponseEntity.ok(userService.updateUserDetailsAsAdmin(id, updatedUser));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("User not found: " + e.getMessage());
+        } catch (UpdateUserException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Update user failed: " + e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid or expired token");

@@ -42,9 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 String email = jwtUtil.extractJWTDetails(token).getEmail();
                 if (email != null && jwtUtil.isTokenValid(token, email, request.getHeader("User-Agent"))) {
+                    System.out.println("JWT is valid");
                     var authToken = new JwtAuthenticationToken(email, token, null);
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("So far so good");
                 }
             }
         } catch (JwtException e) {

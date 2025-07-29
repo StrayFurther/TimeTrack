@@ -1,12 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import {inject, Injectable } from '@angular/core';
 import { environment } from '../../../env/env';
-import {catchError, Observable, of, tap} from 'rxjs';
+import {catchError, Observable, of, tap, throwError} from 'rxjs';
 import {LoginResponse} from '../../models/login-response';
 import { RegisterResponse } from '../../models/register-response';
 import { User } from '../../models/user';
 import {UserDetailComponent} from '../../pages/user/user-detail/user-detail.component';
 import { UserDetailResponse } from '../../models/user-detail-response';
+import {RegisterComponent} from '../../pages/register/register.component';
+import {RegisterUserPayload} from '../../models/user-register-payload';
+import {AdminUserUpdatePayload, RegularUserUpdatePayload} from '../../models/user-update-request';
+import {UserLoginPayload} from '../../models/user-login-payload';
 
 @Injectable({
   providedIn: 'root',
@@ -43,8 +47,8 @@ export class UserService {
     );
   }
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/user/login`, { email, password }).pipe(
+  login(loginPayload: UserLoginPayload): Observable<LoginResponse> {
+    return this.httpClient.post<LoginResponse>(`${this.apiUrl}/user/login`, loginPayload).pipe(
       tap((response: LoginResponse) => {
         this.jwtToken = response.token;
         if (this.jwtToken) {
@@ -55,8 +59,8 @@ export class UserService {
     );
   }
 
-  register(email: string, password: string, userName: string): Observable<RegisterResponse> {
-    return this.httpClient.post<RegisterResponse>(`${this.apiUrl}/user/register`, { email, password, userName }).pipe(
+  register(payload: RegisterUserPayload): Observable<RegisterResponse> {
+    return this.httpClient.post<RegisterResponse>(`${this.apiUrl}/user/register`, payload).pipe(
       catchError((error) => of({ error })),
     );
   }
@@ -69,7 +73,7 @@ export class UserService {
     }).pipe(
       catchError((error) => {
         console.error('Failed to fetch user details', error);
-        throw error; // Rethrow the error instead of returning an error object
+        return throwError(() => error); // Properly rethrow the error
       })
     );
   }
@@ -81,5 +85,31 @@ export class UserService {
         Authorization: `Bearer ${this.jwtToken}`, // Replace with your token logic
       },
     });
+  }
+
+  updateUserDetails(user: RegularUserUpdatePayload): Observable<UserDetailResponse> {
+    return this.httpClient.put<UserDetailResponse>(`${this.apiUrl}/user/details`, user, {
+      headers: {
+        Authorization: `Bearer ${this.jwtToken}`,
+      },
+    }).pipe(
+      catchError((error: any) => {
+        console.error('Failed to update user', error);
+        return throwError(() => new Error('Failed to update user')); // Ensure type consistency
+      })
+    );
+  }
+
+  updateUserAdminDetails(Id: number, user: AdminUserUpdatePayload): Observable<UserDetailResponse> {
+    return this.httpClient.put<UserDetailResponse>(`${this.apiUrl}/user/details/${Id}`, user, {
+      headers: {
+        Authorization: `Bearer ${this.jwtToken}`,
+      },
+    }).pipe(
+      catchError((error: any) => {
+        console.error('Failed to update user', error);
+        return throwError(() => new Error('Failed to update user')); // Ensure type consistency
+      })
+    );
   }
 }

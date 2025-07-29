@@ -13,6 +13,7 @@ import {MatButton} from '@angular/material/button';
 import {LoadingSpinnerService} from '../../services/loading-spinner/loading-spinner.service';
 import { Router } from '@angular/router';
 import {emailTakenValidator} from '../../validators/email-taken';
+import {mapToRegisterUserPayload} from '../../models/user-register-payload';
 
 @Component({
   selector: 'register',
@@ -57,10 +58,9 @@ export class RegisterComponent {
       this.showSpinner();
       console.log('Form Submitted!', this.registerForm.value);
       // Here you would typically handle the form submission, e.g., send data to a server
-      const formValues = this.registerForm.value
       // form is valid -> all controls are valid and filled out
       // -> the enforce operator ensures can be used without null checks
-      const response = await firstValueFrom(this.userService.register(formValues.email!, formValues.password!, formValues.username!));
+      const response = await firstValueFrom(this.userService.register(mapToRegisterUserPayload(this.registerForm.value)));
 
 
       if (response && 'error' in response) {

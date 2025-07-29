@@ -1,11 +1,11 @@
 package strayfurther.backend.service;
 
 import org.springframework.core.io.Resource;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import strayfurther.backend.dto.LoginRequestDTO;
-import strayfurther.backend.dto.UserRequestDTO;
+import strayfurther.backend.dto.*;
 import strayfurther.backend.exception.EmailAlreadyUsedException;
 import strayfurther.backend.exception.FileStorageException;
 import strayfurther.backend.exception.JwtUtilException;
@@ -13,9 +13,10 @@ import strayfurther.backend.exception.UserNotFoundException;
 import strayfurther.backend.model.User;
 import strayfurther.backend.repository.UserRepository;
 import strayfurther.backend.util.JwtUtil;
+import strayfurther.backend.dto.UpdateUserDTO;
+import strayfurther.backend.dto.AdminsUpdateUserDTO;
 
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
 import java.util.Locale;
 import java.util.Optional;
 
@@ -76,6 +77,19 @@ public class UserService {
         }
     }
 
+    public UserDetailDTO getUserDetailsFromToken(String token) throws UsernameNotFoundException {
+        User user = getUserFromToken(token);
+        if (user == null) {
+            throw new UserNotFoundException("User not found");
+        }
+        return UserDetailDTO.builder()
+                .userName(user.getUserName())
+                .role(user.getRole())
+                .email(user.getEmail()).build();
+    }
+
+
+
     public Resource getUserProfilePic(String token) throws FileStorageException {
         User user = getUserFromToken(token);
         return fileService.loadFileAsResource(user.getProfilePic());
@@ -102,5 +116,43 @@ public class UserService {
         userRepository.save(user);
         return fileName;
     }
+
+    public User updateUserDetails(String token, UpdateUserDTO userUpdateDTO) throws UserNotFoundException, JwtUtilException {
+        User userToUpdate = getUserFromToken(token);
+        if (userToUpdate == null) {
+            throw new UserNotFoundException("User not found");
+        }
+
+        userToUpdate.setUserName(userUpdateDTO.getUserName());
+        if (userUpdateDTO.getPassword() != null) {
+            userToUpdate.setPassword(passwordEncoder.encode(userUpdateDTO.getPassword()));
+        }
+        User updatedUser = userRepository.save(userToUpdate);
+        if (updatedUser == null) {
+            throw new UserNotFoundException("Failed to update user details");
+        }
+        return updatedUser;
+    }
+
+    public User updateUserDetailsAsAdmin(Long id, AdminsUpdateUserDTO userUpdateDTO) throws UserNotFoundException, JwtUtilException {
+        Optional<User> user = userRepository.findById(id);
+        if (user.isEmpty()) {
+            throw new UserNotFoundException("User not found");
+        }
+        User userToUpdate = user.get();
+
+        userToUpdate.setUserName(userUpdateDTO.getUserName());
+        if (userUpdateDTO.getPassword() != null) {
+            userToUpdate.setPassword(passwordEncoder.encode(userUpdateDTO.getPassword()));
+        }
+        userToUpdate.setRole(userUpdateDTO.getRole());
+        User updatedUser = userRepository.save(userToUpdate);
+        if (updatedUser == null) {
+            throw new UserNotFoundException("Failed to update user details");
+        }
+        return updatedUser;
+    }
+
+    //TODO: new method to update email adresses with confirmation mails send to new mail address
 
 }

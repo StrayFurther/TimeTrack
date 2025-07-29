@@ -12,6 +12,7 @@ import {Router, RouterLink} from '@angular/router';
 import {firstValueFrom} from 'rxjs';
 import {NgIf} from '@angular/common';
 import {LoadingSpinnerService} from '../../services/loading-spinner/loading-spinner.service';
+import {mapToUserLoginPayload} from '../../models/user-login-payload';
 
 @Component({
   selector: 'login',
@@ -54,10 +55,9 @@ export class LoginComponent {
     if (this.loginForm.valid) {
       this.showSpinner();
       console.log('Form Submitted!', this.loginForm.value);
-      const formValues = this.loginForm.value;
       // form is valid -> all controls are valid and filled out
       // -> the enforce operator ensures can be used without null checks
-      const response= await firstValueFrom(this.userService.login(formValues.email!, formValues.password!));
+      const response= await firstValueFrom(this.userService.login(mapToUserLoginPayload(this.loginForm.value)));
       console.log(response)
       if (response && 'error' in response) {
         this.showLoginFailureMessage.set(true);

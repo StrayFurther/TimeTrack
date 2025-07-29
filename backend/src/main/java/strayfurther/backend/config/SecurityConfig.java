@@ -11,6 +11,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,11 +26,13 @@ import strayfurther.backend.config.whitelist.PermittedEndpoints;
 import strayfurther.backend.filter.CorsPreflightFilter;
 import strayfurther.backend.filter.JwtAuthenticationFilter;
 import strayfurther.backend.filter.RequestOriginValidationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+@EnableMethodSecurity(prePostEnabled = true)
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
@@ -67,11 +70,11 @@ public class SecurityConfig {
         // Disable CSRF protection for development
         http.cors().and().csrf(csrf -> csrf.disable());
 
-        // Explicitly allow OPTIONS requests for CORS preflight
         http.authorizeHttpRequests(auth -> {
             System.out.println("AUTHORIZED IN DEV OR TEST PROFILE");
             auth.requestMatchers(HttpMethod.POST, PermittedEndpoints.POST_ENDPOINTS.toArray(String[]::new)).permitAll();
             auth.requestMatchers(HttpMethod.GET, PermittedEndpoints.GET_ENDPOINTS.toArray(String[]::new)).permitAll();
+            auth.requestMatchers(HttpMethod.PUT,PermittedEndpoints.PUT_ENDPOINTS.toArray(String[]::new)).authenticated(); // Require JWT for PUT requests
             auth.anyRequest().authenticated();
         });
         System.out.println("RUNNING IN TEST PROFILE");
@@ -88,7 +91,7 @@ public class SecurityConfig {
     public SecurityFilterChain prodSecurityFilterChain(HttpSecurity http) throws Exception {
         // Disable CSRF protection. Using JWT for authentication, CSRF protection is not needed.
         http.csrf(csrf -> csrf.disable());
-
+System.out.println("RUNNING IN PROD OR TEST PROFILE: " + activeProfile);
         // Block HTTP requests explicitly
         http.addFilterBefore((request, response, chain) -> {
             if (!request.isSecure()) {
