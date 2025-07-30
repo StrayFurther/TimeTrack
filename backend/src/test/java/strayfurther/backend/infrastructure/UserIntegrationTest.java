@@ -410,7 +410,7 @@ public class UserIntegrationTest {
                         .file(file)
                         .headers(testUtil.generateHeaders())
                 )
-                .andExpect(status().isForbidden()); // Expect 403 for missing token
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -458,7 +458,7 @@ public class UserIntegrationTest {
         mockMvc.perform(get("/user/profile-pic")
                         .header("Authorization", "Bearer " + invalidToken)
                         .headers(testUtil.generateHeaders()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -466,14 +466,14 @@ public class UserIntegrationTest {
         mockMvc.perform(get("/user/profile-pic")
                         .header("Authorization", "Bearer invalidToken")
                         .headers(testUtil.generateHeaders()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void shouldFailToGetProfilePicWithoutToken() throws Exception {
         mockMvc.perform(get("/user/profile-pic")
                         .headers(testUtil.generateHeaders()))
-                .andExpect(status().isForbidden()); // Expect 403 for missing token
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

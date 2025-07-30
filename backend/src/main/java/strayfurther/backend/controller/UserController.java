@@ -15,7 +15,6 @@ import strayfurther.backend.exception.JwtUtilException;
 import strayfurther.backend.exception.UpdateUserException;
 import strayfurther.backend.exception.UserNotFoundException;
 import strayfurther.backend.service.UserService;
-import strayfurther.backend.model.User;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -123,7 +122,10 @@ public class UserController {
     }
 
     @PutMapping("/details")
-    public ResponseEntity<?> updateOwnUser(@RequestHeader("Authorization") String authHeader, @Valid @RequestBody UpdateUserDTO updatedUser) {
+    public ResponseEntity<?> updateOwnUser(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody UpdateUserDTO updatedUser) {
+
         try {
             String token = jwtUtil.extractTokenFromHeader(authHeader);
             return ResponseEntity.ok(userService.updateUserDetails(token, updatedUser));

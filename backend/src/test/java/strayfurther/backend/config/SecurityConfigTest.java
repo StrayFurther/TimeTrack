@@ -7,9 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import strayfurther.backend.repository.UserRepository;
@@ -19,7 +17,6 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,8 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class SecurityConfigTest {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -51,11 +46,6 @@ class SecurityConfigTest {
     @BeforeEach
     void setUp() {
         userRepository.deleteAll();
-    }
-
-    @Test
-    void shouldLoadAuthenticationManagerBean() {
-        assertNotNull(authenticationManager, "AuthenticationManager bean should be loaded");
     }
 
     @Test

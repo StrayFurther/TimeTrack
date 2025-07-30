@@ -6,8 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import strayfurther.backend.validation.OptionalPasswordConstraint;
 
-@Getter
 @Setter
+@Getter
 @Builder
 public class UpdateUserDTO {
 

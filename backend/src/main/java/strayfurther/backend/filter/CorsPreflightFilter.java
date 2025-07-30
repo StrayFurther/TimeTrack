@@ -15,6 +15,7 @@ public class CorsPreflightFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+        System.out.println("CORS Preflight Filter called for request: " + request.getRequestURI());
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             System.out.println("CORS Preflight request received from: " + request.getRemoteAddr());
             response.setHeader("Access-Control-Allow-Origin", "*");
@@ -23,7 +24,7 @@ public class CorsPreflightFilter extends OncePerRequestFilter {
             response.setHeader("Access-Control-Max-Age", "3600");
             response.setStatus(HttpServletResponse.SC_OK);
         } else {
-            System.out.println("EEEEEEEMAIL: " + request.getRemoteAddr());
+            System.out.println("CORS FILTER " + request.getRemoteAddr());
             filterChain.doFilter(request, response);
         }
     }

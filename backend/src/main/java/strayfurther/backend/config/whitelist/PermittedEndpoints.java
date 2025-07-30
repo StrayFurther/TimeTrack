@@ -13,8 +13,4 @@ public class PermittedEndpoints {
             "/api/user/exists",
             "/user/exists"
     );
-    public static final List<String> PUT_ENDPOINTS = List.of(
-            "/api/**",
-            "/**"
-    );
 }

@@ -5,6 +5,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -15,6 +17,7 @@ import strayfurther.backend.security.JwtAuthenticationToken;
 import strayfurther.backend.util.JwtUtil;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -39,31 +42,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
         try {
+            System.out.println("Extracted JWT token: " + token);
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 String email = jwtUtil.extractJWTDetails(token).getEmail();
                 if (email != null && jwtUtil.isTokenValid(token, email, request.getHeader("User-Agent"))) {
                     System.out.println("JWT is valid");
-                    var authToken = new JwtAuthenticationToken(email, token, null);
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    var authToken = new JwtAuthenticationToken(email, token, List.of(new SimpleGrantedAuthority("ROLE_USER")));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    authToken.setAuthenticated(true);
+                    System.out.println("Authentication set in SecurityContextHolder: " + SecurityContextHolder.getContext().getAuthentication());
+
                     System.out.println("So far so good");
                 }
             }
         } catch (JwtException e) {
             // no need to do something here, just let the filter chain continue
+            System.out.println("JWT validation failed: " + e.getMessage());
         }
-
+        System.out.println("Continuing filter chain for request: " + request.getRequestURI());
         filterChain.doFilter(request, response);
+        System.out.println("After filter: SecurityContextHolder contains: " + SecurityContextHolder.getContext().getAuthentication());
+        System.out.println("Continuing filter chain for request (AFTER DO FILTER CHAIN): " + request.getRequestURI());
     }
 
 
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-        String path = request.getRequestURI();
-        System.out.println("Checking if path is whitelisted: '" + path + "'");
-        boolean isPermitted = PermittedEndpoints.POST_ENDPOINTS.stream().anyMatch(endpoint -> pathMatcher.match(endpoint, path)) ||
-                PermittedEndpoints.GET_ENDPOINTS.stream().anyMatch(endpoint -> pathMatcher.match(endpoint, path));
-        System.out.println("Path is whitelisted: " + isPermitted);
-        return isPermitted;
-    }
+//    @Override
+//    protected boolean shouldNotFilter(HttpServletRequest request) {
+//        String path = request.getRequestURI();
+//        String method = request.getMethod();
+//        boolean isPermitted =
+//                (method.equals("POST") && PermittedEndpoints.POST_ENDPOINTS.stream().anyMatch(endpoint -> pathMatcher.match(endpoint, path)))
+//                || (method.equals("GET") && PermittedEndpoints.GET_ENDPOINTS.stream().anyMatch(endpoint -> pathMatcher.match(endpoint, path)));
+//        System.out.println("isPermitted: " + isPermitted);
+//        return isPermitted;
+//    }
 }
