@@ -16,12 +16,13 @@ import {mapToRegularUserUpdatePayload} from '../../../models/user-update-request
 import {MatIcon} from '@angular/material/icon';
 import {FileExplorerDialogComponent} from './file-explorer-dialog/file-explorer-dialog.component';
 import {MatDialog} from '@angular/material/dialog';
+import {MatCard, MatCardContent } from '@angular/material/card';
 
 
 @Component({
   selector: 'app-user-detail',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, MatFormField, MatSelect, MatOption, MatButton, MatInput, MatError, MatLabel, MatIcon],
+  imports: [ReactiveFormsModule, CommonModule, MatFormField, MatSelect, MatOption, MatButton, MatInput, MatError, MatLabel, MatIcon, MatCard, MatCardContent],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss'
 })

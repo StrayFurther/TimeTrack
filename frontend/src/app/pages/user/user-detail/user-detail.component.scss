@@ -1,3 +1,5 @@
+@use '../../../../styles/effortrix-theme' as *;
+
 .profile-detail {
   display: flex;
   flex-direction: column;
@@ -9,25 +11,51 @@
   .user-details {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
     gap: 1rem;
     margin-top: 2rem;
+    width: 100%;
+    max-width: 600px;
+
     p {
-      width: 25%;
-      text-align: center;
       display: flex;
       justify-content: space-between;
-      span {
-        width: 25%;
+      align-items: center;
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      background-color: map-get($effortrix-primary-palette, 50); // soft gray-blue tone
+      border-left: 4px solid map-get($effortrix-primary-palette, 500); // left color accent
+      border-radius: 0.375rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+
+      strong {
+        flex: 0 0 35%;
         text-align: left;
+        color: map-get($effortrix-text, secondary);
+        font-weight: 500;
+      }
+
+      span {
+        flex: 1;
+        text-align: right;
+        color: map-get($effortrix-text, primary);
+        font-weight: 600;
       }
     }
+
     button {
-      width: 250px;
+      align-self: center;
+      width: 200px;
+      margin-top: 1rem;
+      background-color: map-get($effortrix-primary-palette, 500);
+      color: map-get($effortrix-text, contrast);
+      font-weight: 500;
+
+      &:hover {
+        background-color: darken(map-get($effortrix-primary-palette, 500), 10%);
+      }
     }
   }
+
   .profile-pic__container {
     position: relative;
     width: 250px;
@@ -69,17 +97,17 @@
   }
 
   form {
-    margin-top: 2rem;
+    margin-top: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
     justify-content: center;
     align-items: center;
     width: 100%;
 
     & > * {
-      width: 50%;
+      width: 100%;
     }
+
   }
 
 

@@ -7,51 +7,56 @@
     </button>
   </div>
   @if (!showErrorMessage() && isEditModeActive()) {
-    <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
-      <mat-form-field appearance="fill" class="form-group">
-        <mat-label>Username</mat-label>
-        <input matInput id="userName" type="text" formControlName="userName" />
-        @if(userForm.get('userName')?.invalid && userForm.get('userName')?.touched) {
-          <mat-error >
-            Username is required.
-          </mat-error>
-        }
-      </mat-form-field>
+    <mat-card class="register-card px-4 mt-5 pb-2 w-50">
+      <mat-card-content class="my-2 mx-0">
+      <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
+        <mat-form-field appearance="fill" class="form-group">
+          <mat-label>Username</mat-label>
+          <input matInput id="userName" type="text" formControlName="userName" />
+          @if(userForm.get('userName')?.invalid && userForm.get('userName')?.touched) {
+            <mat-error >
+              Username is required.
+            </mat-error>
+          }
+        </mat-form-field>
 
-      <!--
-        For now we dont allow changing the email address.
-      -->
-      <mat-form-field appearance="fill" class="form-group">
-        <mat-label>Email</mat-label>
-        <input matInput id="email" type="email" formControlName="email"  readonly/>
-        @if(userForm.get('email')?.invalid && userForm.get('email')?.touched) {
-          <mat-error>
-            Enter a valid email address.
-          </mat-error>
-        }
-      </mat-form-field>
+        <!--
+          For now we dont allow changing the email address.
+        -->
+        <mat-form-field appearance="fill" class="form-group">
+          <mat-label>Email</mat-label>
+          <input matInput id="email" type="email" formControlName="email"  readonly/>
+          @if(userForm.get('email')?.invalid && userForm.get('email')?.touched) {
+            <mat-error>
+              Enter a valid email address.
+            </mat-error>
+          }
+        </mat-form-field>
 
-      <!--
-        Role selection is disabled in edit mode.
-        Probably should not even display it
-        only for admins if they want to change a users role.
-        Guess but only if this component wil be reused for checking out others peoples profiles.
-        Dont know yet.
-       -->
-      <mat-form-field appearance="fill" class="form-group">
-        <mat-label>Role</mat-label>
-        <mat-select id="role" formControlName="role" [disabled]="true">
-          <mat-option *ngFor="let role of roles" [value]="role">{{ role }}</mat-option>
-        </mat-select>
-        @if (userForm.get('role')?.invalid && userForm.get('role')?.touched) {
-          <mat-error>
-            Role is required.
-          </mat-error>
-        }
-      </mat-form-field>
+        <!--
+          Role selection is disabled in edit mode.
+          Probably should not even display it
+          only for admins if they want to change a users role.
+          Guess but only if this component wil be reused for checking out others peoples profiles.
+          Dont know yet.
+         -->
+        <mat-form-field appearance="fill" class="form-group">
+          <mat-label>Role</mat-label>
+          <mat-select id="role" formControlName="role" [disabled]="true">
+            <mat-option *ngFor="let role of roles" [value]="role">{{ role }}</mat-option>
+          </mat-select>
+          @if (userForm.get('role')?.invalid && userForm.get('role')?.touched) {
+            <mat-error>
+              Role is required.
+            </mat-error>
+          }
+        </mat-form-field>
 
-      <button mat-raised-button color="primary" type="submit" [disabled]="userForm.invalid">Save</button>
-    </form>
+          <button mat-raised-button color="primary" type="submit" [disabled]="userForm.invalid">Save</button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
   } @else if (!showErrorMessage() && !isEditModeActive()) {
     <div class="user-details">
       <p><strong>Username:</strong> <span>{{ userForm.get('userName')?.value }}</span></p>

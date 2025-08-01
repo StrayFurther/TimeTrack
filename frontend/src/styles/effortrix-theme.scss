@@ -93,7 +93,7 @@ $effortrix-cancel-palette: mat.m2-define-palette((
   200: #80cbc4,
   300: #4db6ac,
   400: #26a69a,
-  500: #00BFA6, // Vibrant Teal (Accent color)
+  500: #1dbf96, // Softer teal (adjusted for better balance)
   600: #00a88e,
   700: #008e79,
   800: #00796b,
@@ -119,6 +119,7 @@ $effortrix-cancel-palette: mat.m2-define-palette((
     A700: white,
   )
 ), 500);
+
 $effortrix-typography: (
   font-family: 'Roboto, "Helvetica Neue", sans-serif',
   headline-1: (font-size: 112px, line-height: 112px, font-weight: 300),
@@ -154,4 +155,65 @@ $effortrix-dark-theme: mat.m2-define-dark-theme((
 body {
   background-color: var(--mat-sys-color-surface);
   color: var(--mat-sys-color-on-surface);
+
+  mat-card, mat-toolbar {
+    background-color: map-get($effortrix-cancel-palette, 200) !important; // Lighter teal for the form background
+    color: map-get($effortrix-cancel-palette, contrast, 500); // Keep the contrast text color
+  }
+
+  .mat-form-field {
+    background-color: map-get($effortrix-background, surface); // Lighter background for input fields
+    color: map-get($effortrix-text, primary); // Primary text color
+
+    .mat-input-element {
+      color: map-get($effortrix-text, primary);
+    }
+
+    .mat-form-field.mat-focused .mat-form-field-label {
+      color: map-get($effortrix-cancel-palette, 500); // Accent color on focus
+    }
+
+    .mat-form-field.mat-focused .mat-form-field-ripple {
+      background-color: map-get($effortrix-cancel-palette, 500); // Accent color for focus ripple
+    }
+  }
+
+
+  mat-button {
+    background-color: map-get($effortrix-primary-palette, 500);
+    color: map-get($effortrix-text, contrast);
+
+    &:hover {
+      background-color: darken(map-get($effortrix-primary-palette, 500), 10%); // Darken for hover effect
+    }
+
+    &:disabled {
+      background-color: map-get($effortrix-primary-palette, 300);
+      color: map-get($effortrix-text, disabled);
+    }
+  }
+  mat-select[disabled],
+  .mat-select-disabled {
+    background-color: map-get($effortrix-primary-palette, 50); // subtle teal-tinted bg
+    color: map-get($effortrix-text, primary); // make text visible
+    border-radius: 4px;
+    opacity: 1 !important; // remove default Material fading
+    cursor: not-allowed;
+    box-shadow: inset 0 0 0 1px map-get($effortrix-primary-palette, 200); // subtle outline
+  }
+
+  ::ng-deep .mat-select-disabled .mat-select-value {
+    color: map-get($effortrix-text, primary) !important; // ensure contrast
+  }
+
+  ::ng-deep .mat-select-disabled .mat-select-arrow {
+    color: map-get($effortrix-text, disabled) !important;
+  }
+
+
+
+}
+
+:root {
+  --mat-form-field-filled-error-label-text-color: #d97706 !important; // Use the 500 shade from your delete palette
 }
