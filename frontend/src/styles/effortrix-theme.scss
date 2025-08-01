@@ -37,5 +37,6 @@ $effortrix-theme: mat.define-light-theme((
 ));
 
 // Include the core styles + theme styles
-@include mat.core();
+@include mat.elevation-classes();
+@include mat.app-background();
 @include mat.all-component-themes($effortrix-theme);
