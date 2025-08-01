@@ -1,42 +1,157 @@
+@use '@angular/material/core/theming/palettes' as mat-palettes;
+@use '@angular/material/core/m2/typography' as matT;
 @use '@angular/material' as mat;
-
-$effortrix-primary: mat.define-palette((
-  50: #e1e6e7,
-  100: #b3c3c7,
-  200: #809ca2,
-  300: #4d747d,
-  400: #2e5a65,
-  500: #2e3d43,
-  600: #27363c,
-  700: #1f2e33,
-  800: #18272b,
-  900: #0b1a1d,
+$effortrix-primary-palette: mat.m2-define-palette((
+  50:  #e1e6e6,
+  100: #b3baba,
+  200: #829292,
+  300: #516c6c,
+  400: #385353,
+  500: #244241,
+  600: #203a3a,
+  700: #1b3333,
+  800: #172c2c,
+  900: #0f1e1e,
+  A100: #7fffff,
+  A200: #4dffff,
+  A400: #1affff,
+  A700: #00e5e5,
   contrast: (
-    50: #000000,
-    100: #000000,
-    200: #ffffff,
-    300: #ffffff,
-    400: #ffffff,
-    500: #ffffff,
-    600: #ffffff,
-    700: #ffffff,
-    800: #ffffff,
-    900: #ffffff,
+    50:  rgba(0, 0, 0, 0.87),
+    100: rgba(0, 0, 0, 0.87),
+    200: rgba(0, 0, 0, 0.87),
+    300: rgba(0, 0, 0, 0.87),
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(0, 0, 0, 0.87),
+    A200: rgba(0, 0, 0, 0.87),
+    A400: rgba(0, 0, 0, 0.87),
+    A700: rgba(0, 0, 0, 0.87),
   )
-));
+), 500);
 
-$effortrix-accent: mat.define-palette(mat.$pink-palette);
-$effortrix-warn: mat.define-palette(mat.$red-palette);
+// Background and text colors
+$effortrix-text: (
+  primary: #212121,  // Dark Charcoal (Text)
+  secondary: #757575, // Secondary Text
+  disabled: #bdbdbd,  // Disabled Text
+  contrast: #ffffff // Light contrast for dark backgrounds
+);
 
-$effortrix-theme: mat.define-light-theme((
+$effortrix-background: (
+  default: #F8F9FA, // Light Gray (Background)
+  surface: #ffffff // White background for containers
+);
+
+// Button colors (using primary and accent)
+$effortrix-button: (
+  default: $effortrix-primary-palette.500,
+  hover: $effortrix-primary-palette.500,
+  disabled: $effortrix-primary-palette.300,
+);
+
+$effortrix-delete-palette: mat.m2-define-palette((
+  50: #ffebee,
+  100: #ffcdd2,
+  200: #ef9a9a,
+  300: #e57373,
+  400: #ef5350, // Warn Color (Coral Red)
+  500: #f44336,
+  600: #e53935,
+  700: #d32f2f,
+  800: #c62828,
+  900: #b71c1c,
+  A100: #b71c1c,
+  A200: #b71c1c,
+  A400: #b71c1c,
+  A700: #b71c1c,
+  contrast: (
+    50: rgba(0,0,0,0.87),
+    100: rgba(0,0,0,0.87),
+    200: rgba(0,0,0,0.87),
+    300: rgba(0,0,0,0.87),
+    400: white,
+    500: white,
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(0,0,0,0.87),
+    A200: white,
+    A400: white,
+    A700: white,
+  )
+), 500);
+
+$effortrix-cancel-palette: mat.m2-define-palette((
+  50: #e0f2f1,
+  100: #b2dfdb,
+  200: #80cbc4,
+  300: #4db6ac,
+  400: #26a69a,
+  500: #00BFA6, // Vibrant Teal (Accent color)
+  600: #00a88e,
+  700: #008e79,
+  800: #00796b,
+  900: #00695c,
+  A100: #00695c,
+  A200: #00695c,
+  A400: #00695c,
+  A700: #00695c,
+  contrast: (
+    50: rgba(0,0,0,0.87),
+    100: rgba(0,0,0,0.87),
+    200: rgba(0,0,0,0.87),
+    300: rgba(0,0,0,0.87),
+    400: rgba(0,0,0,0.87),
+    500: rgba(0,0,0,0.87),
+    600: white,
+    700: white,
+    800: white,
+    900: white,
+    A100: rgba(0,0,0,0.87),
+    A200: rgba(0,0,0,0.87),
+    A400: rgba(0,0,0,0.87),
+    A700: white,
+  )
+), 500);
+$effortrix-typography: (
+  font-family: 'Roboto, "Helvetica Neue", sans-serif',
+  headline-1: (font-size: 112px, line-height: 112px, font-weight: 300),
+  headline-2: (font-size: 56px, line-height: 56px, font-weight: 300),
+  headline-3: (font-size: 45px, line-height: 48px, font-weight: 400),
+  headline-4: (font-size: 34px, line-height: 40px, font-weight: 400),
+  headline-5: (font-size: 24px, line-height: 32px, font-weight: 400),
+  headline-6: (font-size: 20px, line-height: 32px, font-weight: 500),
+  body-1: (font-size: 16px, line-height: 24px, font-weight: 400),
+  body-2: (font-size: 14px, line-height: 20px, font-weight: 400),
+  button: (font-size: 14px, line-height: 16px, font-weight: 500),
+  caption: (font-size: 12px, line-height: 16px, font-weight: 400),
+  overline: (font-size: 10px, line-height: 16px, font-weight: 400)
+);
+
+/// Create M2 dark theme object
+$effortrix-dark-theme: mat.m2-define-dark-theme((
   color: (
-    primary: $effortrix-primary,
-    accent: $effortrix-accent,
-    warn: $effortrix-warn
-  )
+    primary: $effortrix-primary-palette,
+    accent: $effortrix-cancel-palette,
+    warn: $effortrix-delete-palette,
+  ),
+  typography: $effortrix-typography,
 ));
 
-// Include the core styles + theme styles
-@include mat.elevation-classes();
-@include mat.app-background();
-@include mat.all-component-themes($effortrix-theme);
+// Include Angular Material core styles
+@include mat.core();
+
+// Apply the theme styles globally
+@include mat.all-component-themes($effortrix-dark-theme);
+
+// Optional global styles for surface and text color
+body {
+  background-color: var(--mat-sys-color-surface);
+  color: var(--mat-sys-color-on-surface);
+}
