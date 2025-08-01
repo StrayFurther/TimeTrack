@@ -1,0 +1,10 @@
+<h1 mat-dialog-title>Select a File</h1>
+<div mat-dialog-content>
+  <input type="file" (change)="onFileSelected($event)" />
+</div>
+<div mat-dialog-actions>
+  <button mat-button (click)="onDeleteFile()">Delete</button>
+</div>
+<div mat-dialog-actions>
+  <button mat-button mat-dialog-close>Cancel</button>
+</div>
