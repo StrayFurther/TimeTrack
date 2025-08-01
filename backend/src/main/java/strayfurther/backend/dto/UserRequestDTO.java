@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import strayfurther.backend.model.enums.Role;
-import strayfurther.backend.validation.PasswordConstraint;
+import strayfurther.backend.validation.OptionalPasswordConstraint;
 
 
 @Getter
@@ -21,7 +21,8 @@ public class UserRequestDTO {
     @Email
     private String email;
 
-    @PasswordConstraint
+    @NotBlank
+    @OptionalPasswordConstraint
     private String password;
 
     @Builder.Default

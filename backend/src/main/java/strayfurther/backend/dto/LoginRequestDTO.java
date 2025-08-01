@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import strayfurther.backend.validation.PasswordConstraint;
+import strayfurther.backend.validation.OptionalPasswordConstraint;
 
 @Getter
 @Setter
@@ -16,7 +16,8 @@ public class LoginRequestDTO {
     @Email
     private String email;
 
-    @PasswordConstraint
+    @NotBlank
+    @OptionalPasswordConstraint
     private String password;
 
 }

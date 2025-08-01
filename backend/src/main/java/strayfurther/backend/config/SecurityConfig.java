@@ -48,7 +48,8 @@ public class SecurityConfig {
         System.out.println("RUNNING IN DEV OR TEST PROFILE: " + activeProfile);
         System.out.println("Active Profile: " + environment.getActiveProfiles()[0]);
         // Disable CSRF protection for development
-        http.cors().and().csrf(csrf -> csrf.disable());
+        http.cors(cors -> cors.configurationSource(request -> new org.springframework.web.cors.CorsConfiguration().applyPermitDefaultValues()))
+                .csrf(csrf -> csrf.disable());
 
 
         http.authorizeHttpRequests(auth -> {

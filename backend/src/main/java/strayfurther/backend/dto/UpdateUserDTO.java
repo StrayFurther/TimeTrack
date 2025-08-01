@@ -14,6 +14,7 @@ public class UpdateUserDTO {
     @NotBlank
     String userName;
 
+    @NotBlank
     @OptionalPasswordConstraint
     String password;
 }

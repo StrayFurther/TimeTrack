@@ -13,20 +13,24 @@ import {MatInput} from '@angular/material/input';
 import {catchError, forkJoin, of} from 'rxjs';
 import { environment } from '../../../../env/env';
 import {mapToRegularUserUpdatePayload} from '../../../models/user-update-request';
-import {toSignal} from '@angular/core/rxjs-interop';
+import {MatIcon} from '@angular/material/icon';
+import {FileExplorerDialogComponent} from './file-explorer-dialog/file-explorer-dialog.component';
+import {MatDialog} from '@angular/material/dialog';
 
 
 @Component({
   selector: 'app-user-detail',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, MatFormField, MatSelect, MatOption, MatButton, MatInput, MatError, MatLabel],
+  imports: [ReactiveFormsModule, CommonModule, MatFormField, MatSelect, MatOption, MatButton, MatInput, MatError, MatLabel, MatIcon],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss'
 })
 export class UserDetailComponent implements OnInit {
-  roles = getRoleEnumValues();
+  dialog = inject(MatDialog);
   userService = inject(UserService);
   loadingSpinnerService = inject(LoadingSpinnerService);
+
+  roles = getRoleEnumValues();
   showErrorMessage = signal(false);
   errorMessage = signal('An error occurred while loading user data. Please try again later.');
   userForm = new FormGroup({
@@ -102,5 +106,13 @@ export class UserDetailComponent implements OnInit {
         }
       );
     }
+  }
+
+  startChangeProfilePictureProcess(): void {
+    const dialogRef = this.dialog.open(FileExplorerDialogComponent);
+
+    dialogRef.afterClosed().subscribe(() => {
+      console.log('File explorer dialog closed');
+    });
   }
 }

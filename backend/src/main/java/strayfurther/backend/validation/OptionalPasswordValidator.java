@@ -16,3 +16,4 @@ public class OptionalPasswordValidator implements ConstraintValidator<OptionalPa
         return password.matches(PASSWORD_PATTERN);
     }
 }
+

@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ActiveProfiles("test")
 @SpringBootTest
-class PasswordValidatorTest {
+class OptionalPasswordValidatorTest {
 
-    private final PasswordValidator validator = new PasswordValidator();
+    private final OptionalPasswordValidator validator = new OptionalPasswordValidator();
 
     @Test
     void testValidPassword() {
@@ -34,6 +34,6 @@ class PasswordValidatorTest {
 
     @Test
     void testNullPassword() {
-        assertFalse(validator.isValid(null, null)); // Null password
+        assertTrue(validator.isValid(null, null)); // Null password
     }
 }

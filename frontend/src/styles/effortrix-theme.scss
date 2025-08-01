@@ -1,0 +1,41 @@
+@use '@angular/material' as mat;
+
+$effortrix-primary: mat.define-palette((
+  50: #e1e6e7,
+  100: #b3c3c7,
+  200: #809ca2,
+  300: #4d747d,
+  400: #2e5a65,
+  500: #2e3d43,
+  600: #27363c,
+  700: #1f2e33,
+  800: #18272b,
+  900: #0b1a1d,
+  contrast: (
+    50: #000000,
+    100: #000000,
+    200: #ffffff,
+    300: #ffffff,
+    400: #ffffff,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+  )
+));
+
+$effortrix-accent: mat.define-palette(mat.$pink-palette);
+$effortrix-warn: mat.define-palette(mat.$red-palette);
+
+$effortrix-theme: mat.define-light-theme((
+  color: (
+    primary: $effortrix-primary,
+    accent: $effortrix-accent,
+    warn: $effortrix-warn
+  )
+));
+
+// Include the core styles + theme styles
+@include mat.core();
+@include mat.all-component-themes($effortrix-theme);

@@ -1,6 +1,11 @@
 <div class="profile-detail">
   <h1>User Profile</h1>
-  <img class='profile-pic' [src]="profilePicUrl" alt="Profile Picture" class="profile-pic" />
+  <div class="profile-pic__container">
+    <img class='profile-pic' [src]="profilePicUrl" alt="Profile Picture" class="profile-pic" />
+    <button class="edit__button" mat-icon-button (click)="startChangeProfilePictureProcess()">
+      <mat-icon>edit</mat-icon>
+    </button>
+  </div>
   @if (!showErrorMessage() && isEditModeActive()) {
     <form [formGroup]="userForm" (ngSubmit)="onSubmit()">
       <mat-form-field appearance="fill" class="form-group">
