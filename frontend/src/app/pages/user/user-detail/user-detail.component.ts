@@ -112,8 +112,8 @@ export class UserDetailComponent implements OnInit {
   startChangeProfilePictureProcess(): void {
     const dialogRef = this.dialog.open(FileExplorerDialogComponent);
 
-    dialogRef.afterClosed().subscribe(() => {
-      console.log('File explorer dialog closed');
+    dialogRef.afterClosed().subscribe((file) => {
+      console.log('File explorer dialog closed', file);
     });
   }
 }

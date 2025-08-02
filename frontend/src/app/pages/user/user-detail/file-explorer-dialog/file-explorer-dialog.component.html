@@ -1,10 +1,21 @@
-<h1 mat-dialog-title>Select a File</h1>
-<div mat-dialog-content>
-  <input type="file" (change)="onFileSelected($event)" />
-</div>
-<div mat-dialog-actions>
-  <button mat-button (click)="onDeleteFile()">Delete</button>
-</div>
-<div mat-dialog-actions>
-  <button mat-button mat-dialog-close>Cancel</button>
-</div>
+@if (previewMode) {
+  <h2 mat-dialog-title>Preview Image</h2>
+  <mat-dialog-content>
+    <img [src]="previewUrl" class="image-preview" />
+    <p>Upload this image as your profile picture?</p>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="cancelSelection()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="confirmUpload()">Upload</button>
+  </mat-dialog-actions>
+} @else {
+  <h2 mat-dialog-title>Select a File</h2>
+  <mat-dialog-content>
+    <p>Select a file as profile picture or delete your current one!</p>
+    <input type="file" (change)="onFileSelected($event)" />
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button color="warn" (click)="confirmDelete()">Delete</button>
+    <button mat-button (click)="onCancel()">Cancel</button>
+  </mat-dialog-actions>
+}
